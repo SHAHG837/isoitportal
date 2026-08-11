@@ -52,42 +52,56 @@ export const Footer: React.FC<FooterProps> = ({ lang }) => {
           </div>
 
           {/* Contact Information */}
-          <div className="space-y-2 text-xs font-urdu">
+          <div className="space-y-3 text-xs font-urdu">
             <h4 className="text-sm font-bold text-amber-300 border-b border-slate-800 pb-1">
               مرکزی رابطہ (Head Office)
             </h4>
-            <div className="space-y-2 text-slate-300 font-sans">
+            <div className="space-y-2.5 text-slate-300 font-sans">
+              {/* Address */}
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span className="font-urdu font-bold text-white text-sm">مرکزی دفتر: بین الاقوامی تنظیم السادات پورٹل</span>
+                <div className="font-urdu">
+                  <span className="text-amber-300 font-bold ml-1">مرکزی دفتر:</span>
+                  <span className="font-bold text-white text-sm">بین الاقوامی تنظیم السادات پورٹل</span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2 flex-wrap">
-                <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href="mailto:syedmuhammadamir@gmail.com" className="hover:text-amber-300 transition-colors">
-                  syedmuhammadamir@gmail.com
-                </a>
-                <span className="text-slate-600">/</span>
-                <a 
-                  href="https://isoitportal.ai.studio" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-amber-300 hover:underline font-mono text-xs"
-                >
-                  https://isoitportal.ai.studio
-                </a>
+              {/* Email & Portal Link */}
+              <div className="flex items-start gap-2">
+                <Mail className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="font-urdu text-xs">
+                  <span className="text-amber-300 font-bold block mb-0.5">ای میل و پورٹل لنک:</span>
+                  <div className="flex items-center gap-2 flex-wrap font-sans">
+                    <a href="mailto:syedmuhammadamir@gmail.com" className="text-slate-200 hover:text-amber-300 transition-colors">
+                      syedmuhammadamir@gmail.com
+                    </a>
+                    <span className="text-slate-600">/</span>
+                    <a 
+                      href="https://isoitportal.ai.studio" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-amber-300 hover:underline font-mono"
+                    >
+                      https://isoitportal.ai.studio
+                    </a>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-start gap-2 pt-1">
+              {/* Phone Numbers */}
+              <div className="flex items-start gap-2 pt-0.5">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="flex flex-wrap gap-x-2 gap-y-1 font-mono text-amber-200 font-bold">
-                  <a href="tel:+923323475431" className="hover:text-white transition-colors">+923323475431</a>
-                  <span className="text-slate-600">/</span>
-                  <a href="tel:+923008658360" className="hover:text-white transition-colors">+923008658360</a>
-                  <span className="text-slate-600">/</span>
-                  <a href="tel:+923309899999" className="hover:text-white transition-colors">+923309899999</a>
-                  <span className="text-slate-600">/</span>
-                  <a href="tel:+923298562895" className="hover:text-white transition-colors">+923298562895</a>
+                <div className="font-urdu text-xs">
+                  <span className="text-amber-300 font-bold block mb-0.5">رابطہ نمبرز:</span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-amber-200 font-bold" dir="ltr">
+                    <a href="tel:+923323475431" className="hover:text-white transition-colors text-slate-100">+923323475431</a>
+                    <span className="text-amber-400/80">|</span>
+                    <a href="tel:+923008658360" className="hover:text-white transition-colors text-slate-100">+923008658360</a>
+                    <span className="text-amber-400/80">|</span>
+                    <a href="tel:+923309899999" className="hover:text-white transition-colors text-slate-100">+923309899999</a>
+                    <span className="text-amber-400/80">|</span>
+                    <a href="tel:+923298562895" className="hover:text-white transition-colors text-slate-100">+923298562895</a>
+                  </div>
                 </div>
               </div>
             </div>
