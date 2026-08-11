@@ -97,7 +97,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               <span className="text-emerald-200">آن لائن رجسٹریشن</span>
             </div>
             <div className="p-3 bg-emerald-900/60 rounded-xl border border-emerald-700/50">
-              <span className="text-amber-300 font-bold font-mono text-xl block">7+</span>
+              <span className="text-amber-300 font-bold font-mono text-xl block">5</span>
               <span className="text-emerald-200">تخصصاتی کورسز</span>
             </div>
             <div className="p-3 bg-emerald-900/60 rounded-xl border border-emerald-700/50">

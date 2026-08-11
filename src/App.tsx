@@ -20,8 +20,30 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('home');
 
   // Dynamic Course & Division State
-  const [availableCourses, setAvailableCourses] = useState<string[]>(COURSES_LIST);
+  const [availableCourses, setAvailableCourses] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('sadaat_courses_2026');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(c => COURSES_LIST.includes(c))) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return COURSES_LIST;
+  });
   const [availableDivisions, setAvailableDivisions] = useState<string[]>(DIVISIONS_LIST);
+
+  const handleUpdateCourses = (newCourses: string[]) => {
+    setAvailableCourses(newCourses);
+    try {
+      localStorage.setItem('sadaat_courses_2026', JSON.stringify(newCourses));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Application & Email Notification States with LocalStorage Persistence
   const [applicants, setApplicants] = useState<Applicant[]>(() => {
@@ -213,7 +235,7 @@ export default function App() {
               availableDivisions={availableDivisions}
               onUpdateApplicants={handleUpdateApplicants}
               onAddNotifications={handleAddNotifications}
-              onUpdateCourses={setAvailableCourses}
+              onUpdateCourses={handleUpdateCourses}
               onUpdateDivisions={setAvailableDivisions}
               onOpenCardModal={handleOpenCardModal}
               onAdminLogout={() => {

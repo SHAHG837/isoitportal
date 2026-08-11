@@ -13,7 +13,7 @@ export interface Applicant {
   email: string;
   education: string;
   division: string; // e.g. Lahore, Karachi, Gilgit, Quetta, Multan, etc.
-  selectedCourse?: string; // Course selected e.g. "قرآنی معارف و تفسیر", "اخلاقیات و شخصیت سازی", "قیادت و سوشل میڈیا", "سائبر سیکیورٹی و انفارمیشن ٹیکنالوجی", "عربی زبان و قواعد"
+  selectedCourse?: string; // Course selected e.g. "بنیادی کمپیوٹر کورس", "ایڈوانس اے آئی کورس", "ڈیجیٹل مارکیٹنگ کورس", "ورڈپریس کمپلیٹ کورس", "ایس ای او کمپلیٹ کورس"
   address: string;
   photoUrl?: string; // If undefined or empty -> "بغیر تصویر"
   photoFileName?: string;

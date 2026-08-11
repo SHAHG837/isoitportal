@@ -1,13 +1,11 @@
 import { Applicant, CourseModule, EmailNotification, StudentProgress } from '../types';
 
 export const COURSES_LIST = [
-  'قرآنی معارف، تفسیر و علومِ اہل بیتؑ (Quranic & Ahlulbayt Studies)',
-  'اخلاقیات، تزکیہ نفس و شخصیت سازی (Islamic Ethics & Character Building)',
-  'قیادت، تنظیم سازی و کمیونٹی سروس (Leadership & Community Service)',
-  'ڈیجیٹل میڈیا ایتھکس و آن لائن صحافت (Digital Media Ethics & Journalism)',
-  'سائبر سیکیورٹی، AI و IT سائنسز (Cyber Security, AI & IT Sciences)',
-  'عربی زبان، قواعد و لسانِ قرآنی (Arabic Language & Quranic Grammar)',
-  'عقائد، فقیہ و احکامِ شریعت (Islamic Beliefs & Jurisprudence)'
+  'بنیادی کمپیوٹر کورس (Basic Computer Course)',
+  'ایڈوانس اے آئی کورس (Advance AI Course)',
+  'ڈیجیٹل مارکیٹنگ کورس (Digital Marketing Course)',
+  'ورڈپریس کمپلیٹ کورس (WordPress Complete Course)',
+  'ایس ای او کمپلیٹ کورس (SEO Complete Course)'
 ];
 
 export const DIVISIONS_LIST = [
@@ -40,7 +38,7 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     email: 'ali.rizvi@example.com',
     education: 'BS Computer Science (In Progress)',
     division: 'لاہور (Lahore)',
-    selectedCourse: 'قیادت، تنظیم سازی و کمیونٹی سروس (Leadership & Community Service)',
+    selectedCourse: 'بنیادی کمپیوٹر کورس (Basic Computer Course)',
     address: 'گلبرگ 3، لاہور',
     photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
     photoFileName: 'candidate_ali_photo.jpg',
@@ -68,7 +66,7 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     email: 'fatima.naqvi@example.com',
     education: 'M.Sc Physics',
     division: 'کراچی (Karachi)',
-    selectedCourse: 'قرآنی معارف، تفسیر و علومِ اہل بیتؑ (Quranic & Ahlulbayt Studies)',
+    selectedCourse: 'ایڈوانس اے آئی کورس (Advance AI Course)',
     address: 'انچولی سوسائٹی، کراچی',
     photoUrl: undefined, // "بغیر تصویر"
     photoFileName: undefined,
@@ -95,7 +93,7 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     email: 'ahmed.jafri@example.com',
     education: 'F.Sc Pre-Medical',
     division: 'کوئٹہ (Quetta)',
-    selectedCourse: 'سائبر سیکیورٹی، AI و IT سائنسز (Cyber Security, AI & IT Sciences)',
+    selectedCourse: 'ڈیجیٹل مارکیٹنگ کورس (Digital Marketing Course)',
     address: 'عالمدار روڈ، کوئٹہ',
     photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
     photoFileName: 'ahmed_photo.jpg',
@@ -121,7 +119,7 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     email: 'zainab.batool@example.com',
     education: 'BS English Literature',
     division: 'گلگت بلتستان (Gilgit-Baltistan)',
-    selectedCourse: 'اخلاقیات، تزکیہ نفس و شخصیت سازی (Islamic Ethics & Character Building)',
+    selectedCourse: 'ورڈپریس کمپلیٹ کورس (WordPress Complete Course)',
     address: 'سکردو شہر، گلگت',
     photoUrl: undefined, // "بغیر تصویر"
     photoFileName: undefined,
@@ -147,7 +145,7 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     email: 'hussain.shah@example.com',
     education: 'Matric',
     division: 'پشاور (Peshawar)',
-    selectedCourse: 'عربی زبان، قواعد و لسانِ قرآنی (Arabic Language & Quranic Grammar)',
+    selectedCourse: 'ایس ای او کمپلیٹ کورس (SEO Complete Course)',
     address: 'قصہ خوانی، پشاور',
     photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
     photoFileName: 'hussain_pass.jpg',
@@ -188,10 +186,10 @@ export const INITIAL_EMAIL_NOTIFICATIONS: EmailNotification[] = [
 export const COURSE_MODULES_2026: CourseModule[] = [
   {
     id: 'mod-1',
-    titleUrdu: 'ماڈیول 1: قرآن فہمی، سیرت اور اخلاق اسلامی',
-    titleEnglish: 'Module 1: Quranic Understanding, Seerah & Islamic Ethics',
-    descriptionUrdu: 'قرآنی معارف، اخلاقی اقدار اور جوانی کے دور میں پاکیزہ سیرت و کردار کا توازن۔',
-    descriptionEnglish: 'Understanding Quranic core principles, moral excellence, and building spiritual resilience.',
+    titleUrdu: 'ماڈیول 1: بنیادی کمپیوٹر و ونڈوز آفس (Basic Computer Course)',
+    titleEnglish: 'Module 1: Basic Computer, Operating System & MS Office',
+    descriptionUrdu: 'کمپیوٹر کی بنیادی ساخت، ونڈوز آپریٹنگ سسٹم، ایم ایس ورڈ، ایکسل، پاورپوائنٹ اور انٹرنیٹ کا استعمال۔',
+    descriptionEnglish: 'Computer fundamentals, Windows OS, MS Office suite, internet and email essentials.',
     duration: '2 ہفتے (8 اسباق)',
     lessonsCount: 8,
     completedLessons: 8,
@@ -201,10 +199,10 @@ export const COURSE_MODULES_2026: CourseModule[] = [
   },
   {
     id: 'mod-2',
-    titleUrdu: 'ماڈیول 2: تاریخ اسلام اور فکرِ امام خمینیؒ و رہبرِ معظم',
-    titleEnglish: 'Module 2: Islamic History & Contemporary Islamic Thought',
-    descriptionUrdu: 'اسلامی تاریخ کے اہم موڑ، ولایتِ فقیہ کا تصور، اور جدید دنیا میں مسلمانوں کی ترجیحات۔',
-    descriptionEnglish: 'Key historical milestones, Wilayat-e-Faqih, and Muslim youth responsibilities today.',
+    titleUrdu: 'ماڈیول 2: ایڈوانس اے آئی و آرٹیفیشل انٹیلیجنس (Advance AI Course)',
+    titleEnglish: 'Module 2: Advance AI, Prompt Engineering & Automation',
+    descriptionUrdu: 'جدید اے آئی ٹولز، پرامپٹ انجینئرنگ، چیٹ جی پی ٹی، مڈجرنی، کاپائلٹ اور آٹومیشن ٹیکنالوجیز۔',
+    descriptionEnglish: 'Advanced AI tools, prompt engineering, ChatGPT, Midjourney, Copilot, and workflow automation.',
     duration: '3 ہفتے (12 اسباق)',
     lessonsCount: 12,
     completedLessons: 9,
@@ -214,10 +212,10 @@ export const COURSE_MODULES_2026: CourseModule[] = [
   },
   {
     id: 'mod-3',
-    titleUrdu: 'ماڈیول 3: قیادت، ٹیم ورک اور کمیونٹی سروس',
-    titleEnglish: 'Module 3: Leadership Skills, Teamwork & Community Service',
-    descriptionUrdu: 'تنظیمی مہارتیں، مثبت قیادت، معاشرتی خدمات اور تعلیمی میدان میں پیش رفت۔',
-    descriptionEnglish: 'Organizational strategy, leadership ethics, project management, and societal welfare.',
+    titleUrdu: 'ماڈیول 3: ڈیجیٹل مارکیٹنگ و سوشل میڈیا (Digital Marketing Course)',
+    titleEnglish: 'Module 3: Digital Marketing & Social Media Campaign Strategy',
+    descriptionUrdu: 'سوشل میڈیا مارکیٹنگ، فیس بک واٹس ایپ ایڈز، برانڈنگ، کنٹینٹ اسٹریٹیجی اور فیر لانسنگ۔',
+    descriptionEnglish: 'Social media marketing, Facebook & WhatsApp ads, brand positioning, content strategy, freelancing.',
     duration: '2 ہفتے (6 اسباق)',
     lessonsCount: 6,
     completedLessons: 2,
@@ -227,10 +225,10 @@ export const COURSE_MODULES_2026: CourseModule[] = [
   },
   {
     id: 'mod-4',
-    titleUrdu: 'ماڈیول 4: میڈیا ایتھکس، ڈیجیٹل اسکلز اور سایبر شعور',
-    titleEnglish: 'Module 4: Media Ethics, Digital Literacy & Cyber Security',
-    descriptionUrdu: 'مثبت سائیبر پیغام رسانی، سوشل میڈیا پر ذمہ دارانہ رویہ اور جدید ڈیجیٹل ٹولز کا استعمال۔',
-    descriptionEnglish: 'Responsible social media use, content generation, and cyber awareness for youth.',
+    titleUrdu: 'ماڈیول 4: ورڈپریس ڈیولپمنٹ و ایس ای او کمپلیٹ (WordPress & SEO Complete)',
+    titleEnglish: 'Module 4: WordPress Web Development & Search Engine Optimization',
+    descriptionUrdu: 'ورڈپریس ویب سائٹس کی تعمیر، ای کامرس اسٹورز، اور سرچ انجن آپٹمائزیشن (SEO) کی مکمل عملی تربیت۔',
+    descriptionEnglish: 'WordPress website building, WooCommerce e-commerce stores, and comprehensive SEO optimization.',
     duration: '2 ہفتے (6 اسباق)',
     lessonsCount: 6,
     completedLessons: 0,
@@ -244,7 +242,7 @@ export const DEMO_STUDENT_PROGRESS: StudentProgress = {
   studentName: 'محمد علی رضوی',
   rollNumber: 'ISO-2026-RN-101',
   cnic: '35202-8392101-1',
-  courseTitle: 'ISO Digital Youth Leadership Course 2026',
+  courseTitle: 'بنیادی کمپیوٹر کورس (Basic Computer Course)',
   startDate: '20 اگست 2026 (20 August 2026)',
   completionPercentage: 59,
   modules: COURSE_MODULES_2026,
