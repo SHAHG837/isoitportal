@@ -1,0 +1,6 @@
+{
+  "name": "بین الاقوامی تنظیم السادات - آن لائن رجسٹریشن پورٹل",
+  "description": "International Sadaat Organization (بین الاقوامی تنظیم السادات) - مختلف کورسز کے لیے آن لائن رجسٹریشن اور داخلہ پورٹل",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
