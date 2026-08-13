@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Applicant, EmailNotification } from './types';
 import { INITIAL_APPLICANTS, INITIAL_EMAIL_NOTIFICATIONS, COURSES_LIST, DIVISIONS_LIST } from './data/mockData';
 import { Header } from './components/Header';
@@ -45,7 +45,7 @@ export default function App() {
     }
   };
 
-  // Application & Email Notification States with LocalStorage Persistence
+  // Application & Email Notification States with Server & LocalStorage Persistence
   const [applicants, setApplicants] = useState<Applicant[]>(() => {
     try {
       const saved = localStorage.getItem('sadaat_applicants_2026');
@@ -65,6 +65,38 @@ export default function App() {
     }
     return INITIAL_EMAIL_NOTIFICATIONS;
   });
+
+  // Real-Time Cross-Device Backend Sync (Polled every 3.5s so all IP addresses & devices sync)
+  useEffect(() => {
+    const fetchSyncData = async () => {
+      try {
+        const [appRes, notifRes] = await Promise.all([
+          fetch('/api/applicants').then(r => r.ok ? r.json() : null),
+          fetch('/api/notifications').then(r => r.ok ? r.json() : null)
+        ]);
+
+        if (appRes?.success && Array.isArray(appRes.applicants) && appRes.applicants.length > 0) {
+          setApplicants(appRes.applicants);
+          safeSaveApplicantsToStorage(appRes.applicants);
+        }
+
+        if (notifRes?.success && Array.isArray(notifRes.notifications) && notifRes.notifications.length > 0) {
+          setNotifications(notifRes.notifications);
+          try {
+            localStorage.setItem('sadaat_notifications_2026', JSON.stringify(notifRes.notifications));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      } catch (err) {
+        console.warn('Sync poll fetch error:', err);
+      }
+    };
+
+    fetchSyncData();
+    const interval = setInterval(fetchSyncData, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Admin Authentication State (ID: admin, Password: admin123)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
@@ -105,23 +137,44 @@ export default function App() {
       safeSaveApplicantsToStorage(updated);
       return updated;
     });
+
+    // Sync to backend store
+    fetch('/api/applicants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newApplicant)
+    }).catch(err => console.warn('Backend sync applicant error:', err));
   };
 
   // Update applicants handler (from admin panel)
   const handleUpdateApplicants = (updated: Applicant[]) => {
     setApplicants(updated);
     safeSaveApplicantsToStorage(updated);
+
+    // Sync full list update to backend store
+    fetch('/api/applicants', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    }).catch(err => console.warn('Backend sync update error:', err));
   };
 
   // Update applicant selected course
   const handleUpdateApplicantCourse = (applicantId: string, newCourse: string) => {
+    let updatedList: Applicant[] = [];
     setApplicants(prev => {
-      const updated = prev.map(app => 
+      updatedList = prev.map(app => 
         app.id === applicantId ? { ...app, selectedCourse: newCourse, updatedAt: new Date().toISOString() } : app
       );
-      safeSaveApplicantsToStorage(updated);
-      return updated;
+      safeSaveApplicantsToStorage(updatedList);
+      return updatedList;
     });
+
+    fetch('/api/applicants', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedList)
+    }).catch(err => console.warn('Backend sync course update error:', err));
   };
 
   // Add new notifications handler
@@ -135,6 +188,12 @@ export default function App() {
       }
       return updated;
     });
+
+    fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newNotifs)
+    }).catch(err => console.warn('Backend sync notifications error:', err));
   };
 
   // Open Admission Card Modal
