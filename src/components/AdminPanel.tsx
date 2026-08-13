@@ -101,13 +101,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Filtered applicants
   const filteredApplicants = applicants.filter(app => {
-    const matchesSearch = 
-      app.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.cnic.includes(searchTerm) ||
-      app.phone.includes(searchTerm) ||
-      app.division.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (app.selectedCourse && app.selectedCourse.toLowerCase().includes(searchTerm.toLowerCase()));
+    const rawTerm = searchTerm.toLowerCase().trim();
+    const digitsOnly = rawTerm.replace(/\D/g, '');
+
+    const cleanCnic = (app.cnic || '').toLowerCase().replace(/\D/g, '');
+    const cleanPhone = (app.phone || '').toLowerCase().replace(/\D/g, '');
+
+    let matchesSearch = false;
+    if (!rawTerm) {
+      matchesSearch = true;
+    } else {
+      const matchText = 
+        app.fullName.toLowerCase().includes(rawTerm) ||
+        app.trackingNumber.toLowerCase().includes(rawTerm) ||
+        (app.rollNumber && app.rollNumber.toLowerCase().includes(rawTerm)) ||
+        app.email.toLowerCase().includes(rawTerm) ||
+        app.division.toLowerCase().includes(rawTerm) ||
+        (app.selectedCourse && app.selectedCourse.toLowerCase().includes(rawTerm));
+
+      const matchDigits = digitsOnly.length >= 3 && (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly));
+
+      matchesSearch = matchText || matchDigits;
+    }
 
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -871,18 +886,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* AUTOMATIC EMAIL NOTIFICATION LOGS TAB */}
       {activeTab === 'emails' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
             <div>
               <h2 className="text-xl font-bold font-urdu text-emerald-950">
                 خودکار ای میل نوٹیفکیشن ہسٹری (Automated Email Dispatch Log)
               </h2>
               <p className="text-xs text-slate-500 font-urdu mt-0.5">
-                درخواست جمع ہونے اور منظوری/نامنظوری کے بعد امیدواروں کو بھیجی گئی ای میلز کا ریکارڈ۔
+                تمام ای میلز <strong className="text-emerald-800">syedmuhammadamir837@gmail.com</strong> سے خودکار طور پر ارسال کی جاتی ہیں۔
               </p>
             </div>
-            <span className="text-xs bg-emerald-100 text-emerald-800 font-mono font-bold px-3 py-1 rounded-full">
-              SMTP DISPATCH ACTIVE
-            </span>
+            <div className="flex items-center gap-2 bg-emerald-900 text-white px-3 py-1.5 rounded-full text-xs font-mono font-bold shadow-xs">
+              <span>FROM: syedmuhammadamir837@gmail.com</span>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -899,8 +914,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-                    <span>TO: {notif.recipientEmail}</span>
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-600">
+                    <span className="text-emerald-800 font-bold">FROM: syedmuhammadamir837@gmail.com</span>
+                    <span>→</span>
+                    <span className="text-slate-800 font-bold">TO: {notif.recipientEmail}</span>
                     <span>•</span>
                     <span>{new Date(notif.sentAt).toLocaleString()}</span>
                   </div>

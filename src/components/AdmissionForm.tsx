@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Applicant } from '../types';
+import { Applicant, EmailNotification } from '../types';
 import { DIVISIONS_LIST, COURSES_LIST } from '../data/mockData';
 import { 
   PAKISTAN_LOCATION_DATA, 
@@ -32,6 +32,7 @@ import {
 
 interface AdmissionFormProps {
   onAddApplicant: (applicant: Applicant) => void;
+  onAddNotifications?: (notifications: EmailNotification[]) => void;
   onOpenCardModal: (applicant: Applicant) => void;
   availableCourses?: string[];
   availableDivisions?: string[];
@@ -40,6 +41,7 @@ interface AdmissionFormProps {
 
 export const AdmissionForm: React.FC<AdmissionFormProps> = ({
   onAddApplicant,
+  onAddNotifications,
   onOpenCardModal,
   availableCourses = COURSES_LIST,
   availableDivisions = DIVISIONS_LIST,
@@ -243,6 +245,32 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
 
       // Dispatch automated email notification
       const notif = createNotification(newApplicant, 'submission_received');
+      if (onAddNotifications) {
+        onAddNotifications([notif]);
+      }
+
+      // Call backend API to dispatch actual email from syedmuhammadamir837@gmail.com
+      fetch('/api/send-confirmation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: newApplicant.email,
+          fullName: newApplicant.fullName,
+          fatherName: newApplicant.fatherName,
+          trackingNumber: newApplicant.trackingNumber,
+          rollNumber: newApplicant.rollNumber,
+          selectedCourse: newApplicant.selectedCourse,
+          division: newApplicant.division,
+          district: selectedCity,
+          phone: newApplicant.phone,
+          cnic: newApplicant.cnic,
+          education: newApplicant.education
+        })
+      }).then(res => res.json()).then(data => {
+        console.log('Automated confirmation email dispatch result:', data);
+      }).catch(err => {
+        console.warn('API call error:', err);
+      });
 
       onAddApplicant(newApplicant);
       setSubmittedApplicant(newApplicant);
@@ -250,8 +278,8 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
 
       setEmailAlert(
         isUrdu
-          ? `خودکار ای میل نوٹیفکیشن [${newApplicant.email}] پر کامیابی سے بھیج دیا گیا ہے!`
-          : `Automated email notification sent to [${newApplicant.email}]!`
+          ? `ای میل تصدیقی پیغام syedmuhammadamir837@gmail.com سے [${newApplicant.email}] پر برقی صورت میں بھیج دیا گیا ہے!`
+          : `Automated confirmation email dispatched from syedmuhammadamir837@gmail.com to [${newApplicant.email}]!`
       );
     }, 800);
   };
@@ -331,13 +359,37 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
             </p>
           </div>
 
-          {/* Email Alert Banner */}
-          {emailAlert && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
-              <Mail className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>{emailAlert}</span>
+          {/* Official Email Sender Badge Card */}
+          <div className="bg-emerald-950 text-white rounded-2xl p-5 border-2 border-amber-400 text-right space-y-3 font-urdu shadow-lg max-w-lg mx-auto">
+            <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
+              <span className="bg-amber-400 text-emerald-950 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                AUTOMATED EMAIL DISPATCH
+              </span>
+              <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>تصدیقی ای میل روانہ کر دی گئی</span>
+              </div>
             </div>
-          )}
+
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center justify-between text-slate-200">
+                <span className="font-bold text-amber-200">ارسال کنندہ ای میل (Official Sender):</span>
+                <span className="font-mono text-amber-300 font-bold text-xs">syedmuhammadamir837@gmail.com</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-200">
+                <span className="font-bold text-amber-200">موصول کنندہ ای میل (Recipient):</span>
+                <span className="font-mono text-emerald-200 font-bold text-xs">{submittedApplicant.email}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-200">
+                <span className="font-bold text-amber-200">موضوع (Email Subject):</span>
+                <span className="text-emerald-100 text-[11px]">داخلہ درخواست کی تصدیق [{submittedApplicant.trackingNumber}]</span>
+              </div>
+            </div>
+
+            <div className="bg-emerald-900/80 p-2.5 rounded-xl text-[11px] text-emerald-200 leading-relaxed border border-emerald-700/50">
+              سسٹم نے آپ کی تمام فارم معلومات (نام: <strong>{submittedApplicant.fullName}</strong>، کورس: <strong>{submittedApplicant.selectedCourse}</strong>) پر مشتمل مکمل ای میل <strong>syedmuhammadamir837@gmail.com</strong> کے ذریعے آپ کے ای میل ایڈریس پر کامیابی سے بھیج دی ہے۔
+            </div>
+          </div>
 
           {/* Tracking ID Badge */}
           <div className="bg-slate-50 border-2 border-emerald-200 rounded-2xl p-6 max-w-md mx-auto space-y-2">

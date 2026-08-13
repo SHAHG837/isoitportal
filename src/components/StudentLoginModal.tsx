@@ -53,25 +53,29 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
     setError('');
     setCourseSavedSuccess(false);
 
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return;
-
+    const raw = searchQuery.trim().toLowerCase();
+    const digitsOnly = raw.replace(/\D/g, '');
     const list = applicants || [];
-    const cleanQuery = query.replace(/-/g, '');
 
-    // Search by CNIC, Tracking Number, Roll Number, or Phone
     const found = list.find(app => {
-      const cleanCnic = (app.cnic || '').replace(/-/g, '').toLowerCase();
+      const cleanCnic = (app.cnic || '').toLowerCase().replace(/\D/g, '');
       const cleanTrack = (app.trackingNumber || '').toLowerCase();
       const cleanRoll = (app.rollNumber || '').toLowerCase();
-      const cleanPhone = (app.phone || '').replace(/-/g, '');
+      const cleanPhone = (app.phone || '').toLowerCase().replace(/\D/g, '');
+      const cleanEmail = (app.email || '').toLowerCase().trim();
+      const cleanName = (app.fullName || '').toLowerCase().trim();
 
-      return (
-        cleanCnic.includes(cleanQuery) ||
-        cleanTrack.includes(query) ||
-        cleanRoll.includes(query) ||
-        cleanPhone.includes(cleanQuery)
-      );
+      if (digitsOnly.length >= 3) {
+        if (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly)) return true;
+        if (cleanTrack.replace(/\D/g, '').includes(digitsOnly)) return true;
+        if (cleanRoll.replace(/\D/g, '').includes(digitsOnly)) return true;
+      }
+
+      if (cleanTrack.includes(raw) || cleanRoll.includes(raw)) return true;
+      if (cleanEmail.includes(raw) || cleanName.includes(raw)) return true;
+      if ((app.cnic || '').toLowerCase().includes(raw)) return true;
+
+      return false;
     });
 
     if (found) {

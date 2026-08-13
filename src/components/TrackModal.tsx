@@ -28,20 +28,31 @@ export const TrackModal: React.FC<TrackModalProps> = ({
     e.preventDefault();
     if (!query.trim()) return;
 
-    const trimmed = query.trim().toLowerCase();
-    const cleanQuery = trimmed.replace(/-/g, '');
+    const raw = query.trim().toLowerCase();
+    const digitsOnly = raw.replace(/\D/g, '');
     const list = applicants || [];
 
     const result = list.find(a => {
-      const cleanCnic = (a.cnic || '').replace(/-/g, '').toLowerCase();
+      const cleanCnic = (a.cnic || '').toLowerCase().replace(/\D/g, '');
       const cleanTrack = (a.trackingNumber || '').toLowerCase();
       const cleanRoll = (a.rollNumber || '').toLowerCase();
-      return (
-        cleanCnic.includes(cleanQuery) ||
-        cleanTrack === trimmed ||
-        cleanTrack.includes(trimmed) ||
-        cleanRoll.includes(trimmed)
-      );
+      const cleanPhone = (a.phone || '').toLowerCase().replace(/\D/g, '');
+      const cleanEmail = (a.email || '').toLowerCase().trim();
+      const cleanName = (a.fullName || '').toLowerCase().trim();
+
+      // Check digits only match (for CNIC or Phone or digits of tracking/roll)
+      if (digitsOnly.length >= 3) {
+        if (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly)) return true;
+        if (cleanTrack.replace(/\D/g, '').includes(digitsOnly)) return true;
+        if (cleanRoll.replace(/\D/g, '').includes(digitsOnly)) return true;
+      }
+
+      // Check string matches
+      if (cleanTrack.includes(raw) || cleanRoll.includes(raw)) return true;
+      if (cleanEmail.includes(raw) || cleanName.includes(raw)) return true;
+      if ((a.cnic || '').toLowerCase().includes(raw)) return true;
+
+      return false;
     });
 
     setFoundApplicant(result || null);

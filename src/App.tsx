@@ -79,15 +79,30 @@ export default function App() {
 
   const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
 
+  // Safe LocalStorage Persistence Helper
+  const safeSaveApplicantsToStorage = (list: Applicant[]) => {
+    try {
+      localStorage.setItem('sadaat_applicants_2026', JSON.stringify(list));
+    } catch (e) {
+      console.warn('LocalStorage quota exceeded, saving streamlined records without heavy base64 strings', e);
+      try {
+        const streamlined = list.map(app => ({
+          ...app,
+          photoUrl: app.photoUrl && app.photoUrl.length > 500 ? undefined : app.photoUrl,
+          documentUrl: app.documentUrl && app.documentUrl.length > 500 ? undefined : app.documentUrl
+        }));
+        localStorage.setItem('sadaat_applicants_2026', JSON.stringify(streamlined));
+      } catch (err2) {
+        console.error('Failed to save applicants to localStorage:', err2);
+      }
+    }
+  };
+
   // Add new applicant handler
   const handleAddApplicant = (newApplicant: Applicant) => {
     setApplicants(prev => {
       const updated = [newApplicant, ...prev];
-      try {
-        localStorage.setItem('sadaat_applicants_2026', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
+      safeSaveApplicantsToStorage(updated);
       return updated;
     });
   };
@@ -95,11 +110,7 @@ export default function App() {
   // Update applicants handler (from admin panel)
   const handleUpdateApplicants = (updated: Applicant[]) => {
     setApplicants(updated);
-    try {
-      localStorage.setItem('sadaat_applicants_2026', JSON.stringify(updated));
-    } catch (err) {
-      console.error(err);
-    }
+    safeSaveApplicantsToStorage(updated);
   };
 
   // Update applicant selected course
@@ -108,11 +119,7 @@ export default function App() {
       const updated = prev.map(app => 
         app.id === applicantId ? { ...app, selectedCourse: newCourse, updatedAt: new Date().toISOString() } : app
       );
-      try {
-        localStorage.setItem('sadaat_applicants_2026', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
+      safeSaveApplicantsToStorage(updated);
       return updated;
     });
   };
@@ -173,6 +180,7 @@ export default function App() {
         {currentTab === 'apply' && (
           <AdmissionForm
             onAddApplicant={handleAddApplicant}
+            onAddNotifications={handleAddNotifications}
             onOpenCardModal={handleOpenCardModal}
             availableCourses={availableCourses}
             availableDivisions={availableDivisions}
@@ -181,7 +189,11 @@ export default function App() {
         )}
 
         {currentTab === 'dashboard' && (
-          <StudentDashboard lang={lang} />
+          <StudentDashboard 
+            lang={lang} 
+            applicants={applicants}
+            availableCourses={availableCourses}
+          />
         )}
 
         {currentTab === 'card-preview' && (
