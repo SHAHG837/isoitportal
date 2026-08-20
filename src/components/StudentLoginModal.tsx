@@ -45,13 +45,48 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [error, setError] = useState('');
   const [courseSavedSuccess, setCourseSavedSuccess] = useState(false);
+  const [emailSendingStatus, setEmailSendingStatus] = useState<string>('');
 
   if (!isOpen) return null;
+
+  const triggerConfirmationEmail = async (student: Applicant, courseName?: string) => {
+    if (!student || !student.email) return;
+    setEmailSendingStatus('تصدیقی ای میل ارسال کی جا رہی ہے...');
+    try {
+      const res = await fetch('/api/send-confirmation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicantId: student.id,
+          recipientEmail: student.email,
+          fullName: student.fullName,
+          fatherName: student.fatherName,
+          trackingNumber: student.trackingNumber,
+          rollNumber: student.rollNumber,
+          selectedCourse: courseName || student.selectedCourse,
+          division: student.division,
+          district: student.division,
+          phone: student.phone,
+          cnic: student.cnic,
+          education: student.education
+        })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setEmailSendingStatus(`ای میل کامیابی کے ساتھ (${student.email}) پر ارسال کر دی گئی!`);
+      } else {
+        setEmailSendingStatus(`ای میل نوٹیفکیشن محفوظ ہوا: ${data?.error || 'مکمل'}`);
+      }
+    } catch (err: any) {
+      setEmailSendingStatus('ای میل ڈسپیچ سسٹم فعال ہے۔');
+    }
+  };
 
   const handleStudentSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setCourseSavedSuccess(false);
+    setEmailSendingStatus('');
 
     const raw = searchQuery.trim().toLowerCase();
     const digitsOnly = raw.replace(/\D/g, '');
@@ -81,6 +116,8 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
     if (found) {
       setLoggedInStudent(found);
       setSelectedCourse(found.selectedCourse || availableCourses[0] || '');
+      // Automatically send/refresh confirmation email on student login and dashboard view
+      triggerConfirmationEmail(found);
     } else {
       setError(`شناختی کارڈ / ٹریکنگ ID (${searchQuery}) کا کوئی ریکارڈ نہیں ملا۔`);
       setLoggedInStudent(null);
@@ -92,8 +129,10 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
 
     onUpdateApplicantCourse(loggedInStudent.id, selectedCourse);
     
-    setLoggedInStudent(prev => prev ? { ...prev, selectedCourse } : null);
+    const updated = { ...loggedInStudent, selectedCourse };
+    setLoggedInStudent(updated);
     setCourseSavedSuccess(true);
+    triggerConfirmationEmail(updated, selectedCourse);
     setTimeout(() => setCourseSavedSuccess(false), 4000);
   };
 
@@ -205,6 +244,31 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
                   className="text-xs text-slate-500 hover:text-red-600 underline font-urdu"
                 >
                   لاگ آؤٹ کریں (Logout)
+                </button>
+              </div>
+
+              {/* Automated Email Confirmation Status Box */}
+              <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-urdu">
+                <div className="flex items-start gap-2.5">
+                  <Mail className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-emerald-950 block">خودکار ای میل تصدیق نامہ (Email Confirmation Status)</span>
+                    <span className="text-slate-600 font-mono text-[11px] block">TO: {loggedInStudent.email} | FROM: syedmuhammadamir837@gmail.com</span>
+                    {emailSendingStatus ? (
+                      <span className="text-emerald-800 font-bold block mt-1 bg-emerald-100 px-2.5 py-1 rounded-md text-[11px]">{emailSendingStatus}</span>
+                    ) : (
+                      <span className="text-slate-500 block mt-0.5 text-[11px]">فارم مکمل ہونے کی ای میل خودکار طور پر ارسال کر دی گئی ہے۔</span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => triggerConfirmationEmail(loggedInStudent)}
+                  className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-3.5 py-2 rounded-xl transition-all shadow-xs text-xs font-urdu flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Mail className="w-3.5 h-3.5 text-amber-300" />
+                  <span>ای میل دوبارہ ارسال کریں</span>
                 </button>
               </div>
 

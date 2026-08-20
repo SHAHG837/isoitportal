@@ -249,11 +249,17 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
         onAddNotifications([notif]);
       }
 
-      // Call backend API to dispatch actual email from syedmuhammadamir837@gmail.com
+      // 1. Immediately add to local state and trigger backend file save via onAddApplicant
+      onAddApplicant(newApplicant);
+      setSubmittedApplicant(newApplicant);
+
+      // 2. Call backend API with complete applicant object for live email dispatch & backend disk save
       fetch('/api/send-confirmation-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          applicant: newApplicant,
+          applicantId: newApplicant.id,
           recipientEmail: newApplicant.email,
           fullName: newApplicant.fullName,
           fatherName: newApplicant.fatherName,
@@ -272,8 +278,6 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
         console.warn('API call error:', err);
       });
 
-      onAddApplicant(newApplicant);
-      setSubmittedApplicant(newApplicant);
       setIsSubmitting(false);
 
       setEmailAlert(

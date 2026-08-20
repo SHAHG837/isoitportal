@@ -37,7 +37,8 @@ import {
   FileCode,
   MapPin,
   Save,
-  LogOut
+  LogOut,
+  RefreshCw
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -98,6 +99,104 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newDivisionInput, setNewDivisionInput] = useState('');
   const [editingDivisionIndex, setEditingDivisionIndex] = useState<number | null>(null);
   const [editDivisionText, setEditDivisionText] = useState('');
+
+  // Live SMTP / Gmail App Password Management State
+  const [gmailAppPassword, setGmailAppPassword] = useState('');
+  const [isSmtpConfigured, setIsSmtpConfigured] = useState(false);
+  const [smtpStatusMsg, setSmtpStatusMsg] = useState('');
+  const [testTargetEmail, setTestTargetEmail] = useState('syedmuhammadamir837@gmail.com');
+  const [testResultMsg, setTestResultMsg] = useState<{ success: boolean; text: string } | null>(null);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState('');
+
+  const handleLiveRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshNotice('');
+    try {
+      const res = await fetch('/api/applicants');
+      const data = await res.json();
+      if (res.ok && data?.success && Array.isArray(data.applicants)) {
+        onUpdateApplicants(data.applicants);
+        setRefreshNotice(`تازہ ترین ڈیٹا کامیابی سے ریفریش ہو گیا! کُل داخلے: ${data.applicants.length}`);
+        setTimeout(() => setRefreshNotice(''), 4000);
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh data from backend:', err);
+      setRefreshNotice('ریفریش کرنے میں ناکامی پیش آئی۔');
+      setTimeout(() => setRefreshNotice(''), 4000);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === 'emails') {
+      fetch('/api/smtp-config')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.success) {
+            setIsSmtpConfigured(Boolean(data.isConfigured));
+          }
+        })
+        .catch(err => console.warn('SMTP fetch error:', err));
+    }
+  }, [activeTab]);
+
+  const handleSaveSmtpPassword = async () => {
+    setSmtpStatusMsg('');
+    try {
+      const res = await fetch('/api/smtp-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderEmail: 'syedmuhammadamir837@gmail.com',
+          gmailAppPassword: gmailAppPassword
+        })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setIsSmtpConfigured(Boolean(data.isConfigured));
+        setSmtpStatusMsg('گوگل ایپ پاس ورڈ کامیابی سے محفوظ ہو گیا!');
+        setTimeout(() => setSmtpStatusMsg(''), 4000);
+      } else {
+        setSmtpStatusMsg(data?.error || 'محفوظ کرنے میں ناکامی۔');
+      }
+    } catch (err: any) {
+      setSmtpStatusMsg(err?.message || 'خرابی پیش آئی۔');
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    setIsTestingEmail(true);
+    setTestResultMsg(null);
+    try {
+      const res = await fetch('/api/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetEmail: testTargetEmail })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setTestResultMsg({
+          success: true,
+          text: `کامیابی! لائیو ای میل ${testTargetEmail} پر کامیابی سے پہنچ گئی ہے۔ (ID: ${data.messageId || 'ACCEPTED'})`
+        });
+      } else {
+        setTestResultMsg({
+          success: false,
+          text: `ای میل ارسال ناکام: ${data?.error || 'ایپ پاس ورڈ غیر صحیح ہے'}`
+        });
+      }
+    } catch (err: any) {
+      setTestResultMsg({
+        success: false,
+        text: `ارسال کرنے میں نیٹ ورک خرابی: ${err?.message}`
+      });
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
 
   // Filtered applicants
   const filteredApplicants = applicants.filter(app => {
@@ -433,7 +532,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 />
               </div>
 
-              {/* Status Filter Buttons */}
+              {/* Status Filter Buttons and Live Refresh Button */}
               <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto text-xs no-scrollbar">
                 {(['all', 'pending', 'approved', 'rejected'] as const).map(st => (
                   <button
@@ -451,8 +550,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     {st === 'rejected' && 'نامنظور شدہ (Rejected)'}
                   </button>
                 ))}
+
+                <button
+                  onClick={handleLiveRefresh}
+                  disabled={isRefreshing}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-urdu shadow-xs transition-colors cursor-pointer whitespace-nowrap ml-1"
+                  title="سرور فائل سے لائیو ڈیٹا ریفریش کریں"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>{isRefreshing ? 'ریفریش ہو رہا ہے...' : 'لائیو ریفریش'}</span>
+                </button>
               </div>
             </div>
+
+            {refreshNotice && (
+              <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-urdu px-3 py-1.5 rounded-xl flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                <span>{refreshNotice}</span>
+              </div>
+            )}
 
             {/* BULK ACTIONS TOOLBAR */}
             <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-emerald-50/60 p-3 rounded-2xl">
@@ -886,13 +1002,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* AUTOMATIC EMAIL NOTIFICATION LOGS TAB */}
       {activeTab === 'emails' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 space-y-6">
+          
+          {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
             <div>
-              <h2 className="text-xl font-bold font-urdu text-emerald-950">
-                خودکار ای میل نوٹیفکیشن ہسٹری (Automated Email Dispatch Log)
+              <h2 className="text-xl font-bold font-urdu text-emerald-950 flex items-center gap-2">
+                <Mail className="w-5 h-5 text-emerald-700" />
+                <span>خودکار ای میل نوٹیفکیشن و لائیو ڈسپیچ (Live Gmail Dispatch & Logs)</span>
               </h2>
               <p className="text-xs text-slate-500 font-urdu mt-0.5">
-                تمام ای میلز <strong className="text-emerald-800">syedmuhammadamir837@gmail.com</strong> سے خودکار طور پر ارسال کی جاتی ہیں۔
+                تمام ای میلز <strong className="text-emerald-800">syedmuhammadamir837@gmail.com</strong> سے خودکار طور پر طالب علموں کے ای میل ایڈریس پر بھیجی جاتی ہیں۔
               </p>
             </div>
             <div className="flex items-center gap-2 bg-emerald-900 text-white px-3 py-1.5 rounded-full text-xs font-mono font-bold shadow-xs">
@@ -900,7 +1019,91 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
 
+          {/* GMAIL APP PASSWORD & TEST DISPATCH SETTINGS CARD */}
+          <div className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 text-white rounded-2xl p-5 border-2 border-amber-400 shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div>
+                <span className="text-amber-400 font-bold text-xs uppercase tracking-wider font-urdu block">
+                  گوگل ای میل ڈسپیچ سیٹنگز (Gmail SMTP Live Configuration)
+                </span>
+                <h3 className="text-base font-black font-urdu text-white mt-0.5">
+                  syedmuhammadamir837@gmail.com — لائیو ان باکس ڈیلیوری سیٹ اپ
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-[11px] font-bold font-mono ${isSmtpConfigured ? 'bg-emerald-400 text-emerald-950' : 'bg-amber-400 text-amber-950'}`}>
+                  {isSmtpConfigured ? '✓ GMAIL APP PASSWORD ACTIVE' : '⚠ APP PASSWORD NEEDED FOR INBOX DELIVERY'}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-urdu">
+              {/* Box 1: App Password Input */}
+              <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 space-y-2.5">
+                <label className="font-bold text-amber-300 block">
+                  🔑 16-ہندسوں کا گوگل ایپ پاس ورڈ (Gmail 16-Char App Password):
+                </label>
+                <p className="text-[11px] text-emerald-100">
+                  اگر آپ چاہتے ہیں کہ ای میلز طالب علم کے حقیقی ان باکس میں موصول ہوں، تو گوگل سیکیورٹی کی طرف سے بنایا گیا 16-حرفی App Password یہاں درج کریں:
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    placeholder="xxxx xxxx xxxx xxxx"
+                    value={gmailAppPassword}
+                    onChange={(e) => setGmailAppPassword(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-lg bg-white text-slate-900 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                  <button
+                    onClick={handleSaveSmtpPassword}
+                    className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black px-4 py-2 rounded-lg transition-all text-xs font-urdu cursor-pointer shrink-0"
+                  >
+                    محفوظ کریں
+                  </button>
+                </div>
+                {smtpStatusMsg && (
+                  <p className="text-xs text-amber-300 font-bold mt-1">{smtpStatusMsg}</p>
+                )}
+              </div>
+
+              {/* Box 2: Live Test Email Trigger */}
+              <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 space-y-2.5">
+                <label className="font-bold text-amber-300 block">
+                  ⚡ لائیو ای میل ٹیسٹ (Send Live Test Email to Inbox):
+                </label>
+                <p className="text-[11px] text-emerald-100">
+                  کسی بھی ای میل پر فوری طور پر آزمائشی تصدیقی پیغام بھیج کر دیکھیں:
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="syedmuhammadamir837@gmail.com"
+                    value={testTargetEmail}
+                    onChange={(e) => setTestTargetEmail(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-lg bg-white text-slate-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                  <button
+                    onClick={handleSendTestEmail}
+                    disabled={isTestingEmail}
+                    className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg transition-all text-xs font-urdu cursor-pointer shrink-0 flex items-center gap-1"
+                  >
+                    {isTestingEmail ? 'ارسال ہو رہی ہے...' : 'ٹیسٹ ای میل بھیجیں'}
+                  </button>
+                </div>
+                {testResultMsg && (
+                  <p className={`text-xs font-bold mt-1 ${testResultMsg.success ? 'text-emerald-300' : 'text-rose-300'}`}>
+                    {testResultMsg.text}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Email Notification History Log List */}
           <div className="space-y-3">
+            <h3 className="text-sm font-bold font-urdu text-slate-800 border-b border-slate-200 pb-2">
+              ارسال شدہ ای میلز کا ریکارڈ (Dispatched Notification Logs):
+            </h3>
             {notifications.map((notif) => (
               <div 
                 key={notif.id}
@@ -914,7 +1117,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-600">
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-600 flex-wrap">
                     <span className="text-emerald-800 font-bold">FROM: syedmuhammadamir837@gmail.com</span>
                     <span>→</span>
                     <span className="text-slate-800 font-bold">TO: {notif.recipientEmail}</span>

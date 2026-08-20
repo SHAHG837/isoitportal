@@ -99,7 +99,13 @@ export default function App() {
   }, []);
 
   // Admin Authentication State (ID: admin, Password: admin123)
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sadaat_admin_logged_in') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState<boolean>(false);
 
   // Student Authentication State
@@ -310,6 +316,12 @@ export default function App() {
               onUpdateDivisions={setAvailableDivisions}
               onOpenCardModal={handleOpenCardModal}
               onAdminLogout={() => {
+                try {
+                  localStorage.removeItem('sadaat_admin_logged_in');
+                  localStorage.removeItem('sadaat_admin_token');
+                } catch (e) {
+                  console.error(e);
+                }
                 setIsAdminLoggedIn(false);
                 setCurrentTab('home');
               }}

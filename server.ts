@@ -16,9 +16,17 @@ app.use(express.json({ limit: '15mb' }));
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'syedmuhammadamir837@gmail.com';
 const DATA_FILE_PATH = path.join(process.cwd(), 'sadaat_db_store.json');
 
+interface SmtpConfig {
+  senderEmail: string;
+  gmailAppPassword?: string;
+  smtpHost: string;
+  smtpPort: number;
+}
+
 interface DataStore {
   applicants: any[];
   notifications: any[];
+  smtpConfig?: SmtpConfig;
 }
 
 // Load or initialize persistent JSON data store
@@ -29,7 +37,13 @@ function loadStore(): DataStore {
       const parsed = JSON.parse(fileData);
       return {
         applicants: Array.isArray(parsed.applicants) && parsed.applicants.length > 0 ? parsed.applicants : INITIAL_APPLICANTS,
-        notifications: Array.isArray(parsed.notifications) && parsed.notifications.length > 0 ? parsed.notifications : INITIAL_EMAIL_NOTIFICATIONS
+        notifications: Array.isArray(parsed.notifications) && parsed.notifications.length > 0 ? parsed.notifications : INITIAL_EMAIL_NOTIFICATIONS,
+        smtpConfig: parsed.smtpConfig || {
+          senderEmail: SENDER_EMAIL,
+          gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
+          smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+          smtpPort: parseInt(process.env.SMTP_PORT || '587', 10)
+        }
       };
     }
   } catch (err) {
@@ -38,7 +52,13 @@ function loadStore(): DataStore {
 
   const initialStore = {
     applicants: INITIAL_APPLICANTS,
-    notifications: INITIAL_EMAIL_NOTIFICATIONS
+    notifications: INITIAL_EMAIL_NOTIFICATIONS,
+    smtpConfig: {
+      senderEmail: SENDER_EMAIL,
+      gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
+      smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+      smtpPort: parseInt(process.env.SMTP_PORT || '587', 10)
+    }
   };
   saveStore(initialStore);
   return initialStore;
@@ -57,30 +77,115 @@ let globalStore: DataStore = loadStore();
 
 // --- API ENDPOINTS ---
 
+// Admin Authentication Endpoint (ID: admin, Password: admin123)
+app.post('/api/admin/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'ایڈمن آئی ڈی اور پاس ورڈ درج کرنا لازمی ہے۔' 
+      });
+    }
+
+    const cleanUser = String(username).trim().toLowerCase();
+    const cleanPass = String(password).trim();
+
+    // Accepted Admin Credentials:
+    // Usernames: admin, 03323475431, 3323475431, admin@sadaat.org
+    // Passwords: admin123, 12345
+    const isUserValid = cleanUser === 'admin' || cleanUser === '03323475431' || cleanUser.includes('3323475431') || cleanUser === 'admin@sadaat.org';
+    const isPassValid = cleanPass === 'admin123' || cleanPass === '12345';
+
+    if (isUserValid && isPassValid) {
+      const token = `sadaat_admin_jwt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      console.log(`[Admin Login Success]: User '${cleanUser}' authenticated at ${new Date().toISOString()}`);
+      return res.json({
+        success: true,
+        message: 'ایڈمن لاگ ان کامیاب ہو گیا!',
+        token,
+        admin: {
+          username: cleanUser,
+          role: 'super_admin',
+          authenticatedAt: new Date().toISOString()
+        }
+      });
+    }
+
+    console.warn(`[Admin Login Failed]: Invalid attempt with username '${cleanUser}'`);
+    return res.status(401).json({
+      success: false,
+      error: 'غلط ایڈمن آئی ڈی یا پاس ورڈ! برائے مہربانی درست آئی ڈی (admin) اور پاس ورڈ (admin123) درج کریں۔'
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET Admin Verification Status
+app.get('/api/admin/verify', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer sadaat_admin_jwt_')) {
+    return res.json({ success: true, authenticated: true });
+  }
+  return res.json({ success: true, authenticated: false });
+});
+
 // GET All Applicants
 app.get('/api/applicants', (req, res) => {
   res.json({ success: true, applicants: globalStore.applicants });
 });
 
-// POST New Applicant
+// POST New Applicant or Upsert
 app.post('/api/applicants', (req, res) => {
   try {
     const newApplicant = req.body;
-    if (!newApplicant || !newApplicant.id) {
+    if (!newApplicant || (!newApplicant.id && !newApplicant.cnic && !newApplicant.trackingNumber)) {
       return res.status(400).json({ success: false, error: 'Valid applicant object required' });
     }
 
-    // Check if applicant exists
-    const existingIndex = globalStore.applicants.findIndex(a => a.id === newApplicant.id);
+    const applicantId = newApplicant.id || `app-${Date.now()}`;
+    const trackingNumber = newApplicant.trackingNumber || `SADAAT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const rollNumber = newApplicant.rollNumber || `SADAAT-2026-RN-${Math.floor(100 + Math.random() * 900)}`;
+
+    const fullApplicantObj = {
+      ...newApplicant,
+      id: applicantId,
+      trackingNumber,
+      rollNumber: newApplicant.rollNumber || rollNumber,
+      status: newApplicant.status || 'approved',
+      isFullyCompleted: true,
+      updatedAt: new Date().toISOString(),
+      createdAt: newApplicant.createdAt || new Date().toISOString()
+    };
+
+    // Check if applicant already exists in store by id, trackingNumber, or cnic
+    const existingIndex = globalStore.applicants.findIndex(a => 
+      (a.id && a.id === fullApplicantObj.id) ||
+      (a.trackingNumber && a.trackingNumber === fullApplicantObj.trackingNumber) ||
+      (a.cnic && a.cnic.replace(/\D/g, '') === fullApplicantObj.cnic?.replace(/\D/g, ''))
+    );
+
     if (existingIndex >= 0) {
-      globalStore.applicants[existingIndex] = { ...globalStore.applicants[existingIndex], ...newApplicant };
+      globalStore.applicants[existingIndex] = { 
+        ...globalStore.applicants[existingIndex], 
+        ...fullApplicantObj 
+      };
+      console.log(`[DB Sync]: Updated applicant in backend store: ${fullApplicantObj.fullName} (${fullApplicantObj.trackingNumber})`);
     } else {
-      globalStore.applicants = [newApplicant, ...globalStore.applicants];
+      globalStore.applicants = [fullApplicantObj, ...globalStore.applicants];
+      console.log(`[DB Sync]: Saved NEW applicant in backend store: ${fullApplicantObj.fullName} (${fullApplicantObj.trackingNumber})`);
     }
 
     saveStore(globalStore);
-    return res.json({ success: true, applicants: globalStore.applicants });
+    return res.json({ 
+      success: true, 
+      message: 'درخواست بیک اینڈ فائلز میں کامیابی کے ساتھ محفوظ ہو گئی ہے۔',
+      applicant: fullApplicantObj,
+      applicants: globalStore.applicants 
+    });
   } catch (err: any) {
+    console.error('Error saving applicant to backend files:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -97,6 +202,100 @@ app.put('/api/applicants', (req, res) => {
     return res.status(400).json({ success: false, error: 'Expected an array of applicants' });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET SMTP Config
+app.get('/api/smtp-config', (req, res) => {
+  const cfg = globalStore.smtpConfig || {
+    senderEmail: SENDER_EMAIL,
+    gmailAppPassword: process.env.GMAIL_APP_PASSWORD || '',
+    smtpHost: 'smtp.gmail.com',
+    smtpPort: 587
+  };
+  res.json({
+    success: true,
+    senderEmail: cfg.senderEmail || SENDER_EMAIL,
+    isConfigured: Boolean(cfg.gmailAppPassword && cfg.gmailAppPassword.trim().length > 0),
+    smtpHost: cfg.smtpHost || 'smtp.gmail.com',
+    smtpPort: cfg.smtpPort || 587
+  });
+});
+
+// POST Save SMTP Config
+app.post('/api/smtp-config', (req, res) => {
+  try {
+    const { gmailAppPassword, senderEmail } = req.body;
+    globalStore.smtpConfig = {
+      senderEmail: senderEmail || SENDER_EMAIL,
+      gmailAppPassword: (gmailAppPassword || '').trim(),
+      smtpHost: 'smtp.gmail.com',
+      smtpPort: 587
+    };
+    saveStore(globalStore);
+    return res.json({ 
+      success: true, 
+      message: 'SMTP settings updated successfully',
+      isConfigured: Boolean(globalStore.smtpConfig.gmailAppPassword)
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST Test Email Dispatch Endpoint
+app.post('/api/test-email', async (req, res) => {
+  try {
+    const { targetEmail } = req.body;
+    const testRecipient = targetEmail || SENDER_EMAIL;
+    const smtpPass = globalStore.smtpConfig?.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+
+    if (!smtpPass) {
+      return res.status(400).json({
+        success: false,
+        error: 'گوگل ای میل ایپ پاس ورڈ (Gmail App Password) درج نہیں ہے۔ براہ کرم 16 ہندسوں کا ایپ پاس ورڈ درج کریں۔',
+        code: 'MISSING_APP_PASSWORD'
+      });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: SENDER_EMAIL,
+        pass: smtpPass
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: `"بین الاقوامی تنظیم السادات" <${SENDER_EMAIL}>`,
+      to: testRecipient,
+      subject: `ٹیسٹ ای میل - بین الاقوامی تنظیم السادات [${Date.now()}]`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f0fdf4; border: 2px solid #059669; border-radius: 12px; color: #064e3b; text-align: right; direction: rtl;">
+          <h2 style="margin-0 0 10px 0;">بین الاقوامی تنظیم السادات - لائیو ای میل ٹیسٹ</h2>
+          <p>یہ لائیو ٹیسٹ ای میل <strong>${SENDER_EMAIL}</strong> سے کامیابی کے ساتھ موصول ہوئی ہے۔</p>
+          <p style="font-size: 12px; color: #047857; font-family: monospace; direction: ltr; text-align: left;">
+            Sent to: ${testRecipient}<br/>
+            Timestamp: ${new Date().toISOString()}<br/>
+            Status: SMTP DELIVERED SUCCESS
+          </p>
+        </div>
+      `
+    });
+
+    return res.json({
+      success: true,
+      message: `Test email sent successfully to ${testRecipient}!`,
+      messageId: info.messageId,
+      accepted: info.accepted
+    });
+  } catch (err: any) {
+    console.error('Test email failed:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'SMTP authentication or connection failed',
+      details: err
+    });
   }
 });
 
@@ -133,6 +332,7 @@ app.post('/api/notifications', (req, res) => {
 app.post('/api/send-confirmation-email', async (req, res) => {
   try {
     const {
+      applicant,
       applicantId,
       recipientEmail,
       fullName,
@@ -147,22 +347,30 @@ app.post('/api/send-confirmation-email', async (req, res) => {
       education
     } = req.body;
 
-    if (!recipientEmail || !fullName) {
+    const emailToUse = recipientEmail || applicant?.email;
+    const nameToUse = fullName || applicant?.fullName;
+
+    if (!emailToUse || !nameToUse) {
       return res.status(400).json({ 
         success: false, 
         error: 'Recipient email and full name are required.' 
       });
     }
 
-    const emailSubject = `بین الاقوامی تنظیم السادات - داخلہ درخواست کی تصدیق [${trackingNumber || 'ISO-2026'}]`;
-    const emailBodyUrdu = `محترم/محترمہ ${fullName}، آپ کا آن لائن داخلہ فارم کامیابی کے ساتھ موصول ہو گیا ہے اور پورٹل میں محفوظ کر لیا گیا ہے۔ منتخب کردہ کورس: ${selectedCourse || ''}۔ رول نمبر: ${rollNumber || ''}`;
-    const emailBodyEnglish = `Dear ${fullName}, your online admission application has been successfully received and saved in the portal. Course: ${selectedCourse || ''}. Roll Number: ${rollNumber || ''}`;
+    const trkNo = trackingNumber || applicant?.trackingNumber || `SADAAT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const rllNo = rollNumber || applicant?.rollNumber || `SADAAT-2026-RN-${Math.floor(100 + Math.random() * 900)}`;
+    const crs = selectedCourse || applicant?.selectedCourse || '';
+    const appId = applicantId || applicant?.id || `app-${Date.now()}`;
+
+    const emailSubject = `بین الاقوامی تنظیم السادات - داخلہ درخواست کی تصدیق [${trkNo}]`;
+    const emailBodyUrdu = `محترم/محترمہ ${nameToUse}، آپ کا آن لائن داخلہ فارم کامیابی کے ساتھ موصول ہو گیا ہے اور پورٹل میں محفوظ کر لیا گیا ہے۔ منتخب کردہ کورس: ${crs}۔ رول نمبر: ${rllNo}`;
+    const emailBodyEnglish = `Dear ${nameToUse}, your online admission application has been successfully received and saved in the portal. Course: ${crs}. Roll Number: ${rllNo}`;
 
     // Generate Notification Record
     const newNotification = {
       id: `EML-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
-      applicantId: applicantId || `app-${Date.now()}`,
-      recipientEmail,
+      applicantId: appId,
+      recipientEmail: emailToUse,
       subject: emailSubject,
       bodyUrdu: emailBodyUrdu,
       bodyEnglish: emailBodyEnglish,
@@ -172,39 +380,52 @@ app.post('/api/send-confirmation-email', async (req, res) => {
     };
 
     // Auto-save notification into backend store
-    const existingNotifIdx = globalStore.notifications.findIndex(n => n.recipientEmail === recipientEmail && n.subject === emailSubject);
+    const existingNotifIdx = globalStore.notifications.findIndex(n => n.recipientEmail === emailToUse && n.subject === emailSubject);
     if (existingNotifIdx < 0) {
       globalStore.notifications = [newNotification, ...globalStore.notifications];
     }
 
-    // Auto-save/ensure applicant is in globalStore
-    if (trackingNumber || cnic) {
-      const applicantIdx = globalStore.applicants.findIndex(a => 
-        (a.id && a.id === applicantId) || 
-        (a.trackingNumber && a.trackingNumber === trackingNumber) ||
-        (a.cnic && a.cnic === cnic)
-      );
+    // Auto-save/ensure applicant is in globalStore and backend files
+    const applicantObjToSave = applicant || {
+      id: appId,
+      trackingNumber: trkNo,
+      rollNumber: rllNo,
+      fullName: nameToUse,
+      fatherName: fatherName || applicant?.fatherName || '',
+      cnic: cnic || applicant?.cnic || '',
+      phone: phone || applicant?.phone || '',
+      email: emailToUse,
+      education: education || applicant?.education || '',
+      division: division || applicant?.division || '',
+      selectedCourse: crs,
+      status: applicant?.status || 'approved',
+      isFullyCompleted: true,
+      address: applicant?.address || '',
+      photoUrl: applicant?.photoUrl,
+      photoFileName: applicant?.photoFileName,
+      documentUrl: applicant?.documentUrl,
+      documentFileName: applicant?.documentFileName,
+      examCenter: applicant?.examCenter || `مرکزی دفتر بین الاقوامی تنظیم السادات`,
+      examDate: applicant?.examDate || '20 اگست 2026 (صبح 10:00 بجے)',
+      createdAt: applicant?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-      if (applicantIdx < 0) {
-        const newAppObj = {
-          id: applicantId || `app-${Date.now()}`,
-          trackingNumber: trackingNumber || `SADAAT-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-          rollNumber: rollNumber || `SADAAT-2026-RN-${Math.floor(100 + Math.random() * 900)}`,
-          fullName,
-          fatherName: fatherName || '',
-          cnic: cnic || '',
-          phone: phone || '',
-          email: recipientEmail,
-          education: education || '',
-          division: division || '',
-          selectedCourse: selectedCourse || '',
-          status: 'pending',
-          isFullyCompleted: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        globalStore.applicants = [newAppObj, ...globalStore.applicants];
-      }
+    const applicantIdx = globalStore.applicants.findIndex(a => 
+      (a.id && a.id === applicantObjToSave.id) || 
+      (a.trackingNumber && a.trackingNumber === applicantObjToSave.trackingNumber) ||
+      (a.cnic && a.cnic.replace(/\D/g, '') === (applicantObjToSave.cnic || '').replace(/\D/g, ''))
+    );
+
+    if (applicantIdx >= 0) {
+      globalStore.applicants[applicantIdx] = {
+        ...globalStore.applicants[applicantIdx],
+        ...applicantObjToSave
+      };
+      console.log(`[Email Handler]: Updated student record in backend file store: ${applicantObjToSave.fullName}`);
+    } else {
+      globalStore.applicants = [applicantObjToSave, ...globalStore.applicants];
+      console.log(`[Email Handler]: Created new student record in backend file store: ${applicantObjToSave.fullName}`);
     }
 
     saveStore(globalStore);
@@ -272,19 +493,18 @@ app.post('/api/send-confirmation-email', async (req, res) => {
     `;
 
     // Check if live SMTP / App Password is set up
-    const smtpPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+    const smtpPass = globalStore.smtpConfig?.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
     let transportSent = false;
     let messageId = `MSG-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    let deliveryError = '';
 
-    if (smtpPass) {
+    if (smtpPass && smtpPass.trim().length > 0) {
       try {
         const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.gmail.com',
-          port: parseInt(process.env.SMTP_PORT || '587', 10),
-          secure: process.env.SMTP_PORT === '465',
+          service: 'gmail',
           auth: {
-            user: process.env.SMTP_USER || SENDER_EMAIL,
-            pass: smtpPass,
+            user: SENDER_EMAIL,
+            pass: smtpPass.trim(),
           },
         });
 
@@ -297,15 +517,26 @@ app.post('/api/send-confirmation-email', async (req, res) => {
 
         messageId = info.messageId || messageId;
         transportSent = true;
-        console.log(`Live email sent to ${recipientEmail} via SMTP. Message ID: ${messageId}`);
+        console.log(`Live email physically delivered to ${recipientEmail} via Gmail SMTP. Message ID: ${messageId}`);
       } catch (err: any) {
-        console.warn('SMTP Send warning (fallback active):', err.message);
+        deliveryError = err?.message || 'SMTP login or delivery failed';
+        console.warn('SMTP Send warning:', deliveryError);
       }
+    } else {
+      deliveryError = 'Gmail App Password is not configured in Admin Panel SMTP settings.';
+    }
+
+    // Update notification status & error in record
+    newNotification.status = transportSent ? 'delivered' : (deliveryError ? 'error' : 'sent');
+    if (deliveryError) {
+      (newNotification as any).deliveryError = deliveryError;
     }
 
     return res.json({
       success: true,
-      message: `Email confirmation dispatched from ${SENDER_EMAIL} to ${recipientEmail}`,
+      message: transportSent 
+        ? `Email confirmation physically delivered to ${recipientEmail}` 
+        : `Email dispatch recorded. Note: ${deliveryError}`,
       notification: newNotification,
       applicants: globalStore.applicants,
       notifications: globalStore.notifications,
@@ -316,7 +547,8 @@ app.post('/api/send-confirmation-email', async (req, res) => {
         messageId,
         sentAt: new Date().toISOString(),
         isLiveSmtp: transportSent,
-        status: 'delivered'
+        status: transportSent ? 'delivered' : 'logged_only',
+        deliveryError
       }
     });
 

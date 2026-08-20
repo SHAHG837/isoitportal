@@ -155,6 +155,32 @@ export const INITIAL_APPLICANTS: Applicant[] = [
     createdAt: '2026-08-05T14:10:00Z',
     updatedAt: '2026-08-06T12:00:00Z',
     encryptedDataHash: 'E2E-SHA256-9E40B1D2',
+  },
+  {
+    id: 'app-006',
+    trackingNumber: 'SADAAT-2026-7755',
+    rollNumber: 'SADAAT-2026-RN-7755',
+    fullName: 'حافظ سید اویس الرحمن گیلانی',
+    fatherName: 'سید قمر زمان گیلانی',
+    cnic: '37405-8976123-1',
+    dob: '2001-08-14',
+    gender: 'male',
+    phone: '0332-3475431',
+    email: 'jamalequran@gmail.com',
+    education: 'BS Computer Science / Dars-e-Nizami',
+    division: 'راولپنڈی / اسلام آباد (Rawalpindi / Islamabad)',
+    selectedCourse: 'ڈیجیٹل مارکیٹنگ کورس (Digital Marketing Course)',
+    address: 'اسلام آباد / راولپنڈی',
+    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+    photoFileName: 'owais_photo.jpg',
+    status: 'approved',
+    adminNote: 'آن لائن داخلہ درخواست منظور شدہ اور ایڈمیشن کارڈ جاری کر دیا گیا ہے۔',
+    isFullyCompleted: true,
+    createdAt: '2026-08-19T10:00:00Z',
+    updatedAt: '2026-08-19T10:05:00Z',
+    encryptedDataHash: 'E2E-SHA256-A837C902',
+    examCenter: 'مرکزی دفتر بین الاقوامی تنظیم السادات، راولپنڈی / اسلام آباد',
+    examDate: '20 اگست 2026 (صبح 10:00 بجے)'
   }
 ];
 
