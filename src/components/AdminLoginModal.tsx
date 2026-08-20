@@ -149,13 +149,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             />
           </div>
 
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-[11px] text-emerald-950 font-urdu text-center flex items-center justify-center gap-2">
-            <span className="font-bold text-emerald-800">لاگ ان کوائف (Default ID):</span>
-            <code className="bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono font-bold text-emerald-900">admin</code>
-            <span className="font-bold text-emerald-800">پاسورڈ:</span>
-            <code className="bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono font-bold text-emerald-900">admin123</code>
-          </div>
-
           <button
             type="submit"
             disabled={isLoading}
