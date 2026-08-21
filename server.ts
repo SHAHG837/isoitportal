@@ -11,10 +11,24 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '15mb' }));
+// Enable 50MB payload limits for photos and mobile documents
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Global CORS Middleware - allow requests from any IP, mobile phone, and country
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'syedmuhammadamir837@gmail.com';
 const DATA_FILE_PATH = path.join(process.cwd(), 'sadaat_db_store.json');
+const BACKUP_FILE_PATH = path.join(process.cwd(), 'sadaat_applicants_backup.json');
 
 interface SmtpConfig {
   senderEmail: string;
@@ -29,7 +43,7 @@ interface DataStore {
   smtpConfig?: SmtpConfig;
 }
 
-// Load or initialize persistent JSON data store
+// Load or initialize persistent JSON data store with backup fallback
 function loadStore(): DataStore {
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
@@ -47,7 +61,32 @@ function loadStore(): DataStore {
       };
     }
   } catch (err) {
-    console.error('Error reading data store file, initializing defaults:', err);
+    console.error('Error reading primary data store file, attempting backup recovery:', err);
+  }
+
+  // Backup fallback
+  try {
+    if (fs.existsSync(BACKUP_FILE_PATH)) {
+      const backupData = fs.readFileSync(BACKUP_FILE_PATH, 'utf-8');
+      const backupApplicants = JSON.parse(backupData);
+      if (Array.isArray(backupApplicants) && backupApplicants.length > 0) {
+        console.log(`[Recovery]: Restored ${backupApplicants.length} applicants from backup file.`);
+        const restoredStore = {
+          applicants: backupApplicants,
+          notifications: INITIAL_EMAIL_NOTIFICATIONS,
+          smtpConfig: {
+            senderEmail: SENDER_EMAIL,
+            gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
+            smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+            smtpPort: parseInt(process.env.SMTP_PORT || '587', 10)
+          }
+        };
+        saveStore(restoredStore);
+        return restoredStore;
+      }
+    }
+  } catch (backupErr) {
+    console.error('Error reading backup file:', backupErr);
   }
 
   const initialStore = {
@@ -66,7 +105,17 @@ function loadStore(): DataStore {
 
 function saveStore(store: DataStore) {
   try {
-    fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+    const dataStr = JSON.stringify(store, null, 2);
+    fs.writeFileSync(DATA_FILE_PATH, dataStr, 'utf-8');
+    
+    // Always write backup copy of applicants
+    try {
+      if (Array.isArray(store.applicants)) {
+        fs.writeFileSync(BACKUP_FILE_PATH, JSON.stringify(store.applicants, null, 2), 'utf-8');
+      }
+    } catch (bErr) {
+      console.warn('Backup file write warning:', bErr);
+    }
   } catch (err) {
     console.error('Failed to save data store to file:', err);
   }
@@ -129,6 +178,154 @@ app.get('/api/admin/verify', (req, res) => {
     return res.json({ success: true, authenticated: true });
   }
   return res.json({ success: true, authenticated: false });
+});
+
+// Dedicated Admission Submission Endpoint - Handles direct mobile/desktop submissions
+app.post('/api/admission/submit', async (req, res) => {
+  try {
+    const raw = req.body;
+    if (!raw || (!raw.fullName && !raw.cnic && !raw.phone)) {
+      return res.status(400).json({ success: false, error: 'طالب علم کے کوائف مکمل نہیں ہیں۔' });
+    }
+
+    const applicantId = raw.id || `app-${Date.now()}`;
+    const trackingNumber = raw.trackingNumber || `SADAAT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const rollNumber = raw.rollNumber || `SADAAT-2026-RN-${Math.floor(100 + Math.random() * 900)}`;
+
+    const applicantObj = {
+      id: applicantId,
+      trackingNumber,
+      rollNumber,
+      fullName: String(raw.fullName || '').trim(),
+      fatherName: String(raw.fatherName || '').trim(),
+      cnic: String(raw.cnic || '').trim(),
+      dob: raw.dob || '',
+      gender: raw.gender || 'male',
+      phone: String(raw.phone || '').trim(),
+      email: String(raw.email || '').trim().toLowerCase(),
+      education: String(raw.education || '').trim(),
+      division: raw.division || '',
+      selectedCourse: raw.selectedCourse || '',
+      address: String(raw.address || '').trim(),
+      photoUrl: raw.photoUrl,
+      photoFileName: raw.photoFileName,
+      documentUrl: raw.documentUrl,
+      documentFileName: raw.documentFileName,
+      status: raw.status || 'approved',
+      adminNote: raw.adminNote || 'بین الاقوامی تنظیم السادات آن لائن رجسٹریشن اور ای میل تصدیق مکمل ہو چکی ہے۔',
+      isFullyCompleted: true,
+      createdAt: raw.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      encryptedDataHash: raw.encryptedDataHash || `E2E-SHA256-${Math.random().toString(16).substring(2, 10).toUpperCase()}`,
+      examCenter: raw.examCenter || `مرکزی دفتر بین الاقوامی تنظیم السادات، ڈویژن ${raw.division || 'لاہور'}`,
+      examDate: raw.examDate || '20 اگست 2026 (صبح 10:00 بجے)'
+    };
+
+    // Upsert into memory store
+    const existingIndex = globalStore.applicants.findIndex(a => 
+      (a.id && a.id === applicantObj.id) ||
+      (a.trackingNumber && a.trackingNumber === applicantObj.trackingNumber) ||
+      (a.cnic && a.cnic.replace(/\D/g, '') === applicantObj.cnic?.replace(/\D/g, '') && a.cnic.replace(/\D/g, '').length > 5)
+    );
+
+    if (existingIndex >= 0) {
+      globalStore.applicants[existingIndex] = {
+        ...globalStore.applicants[existingIndex],
+        ...applicantObj
+      };
+      console.log(`[Submission]: Updated existing applicant in JSON store: ${applicantObj.fullName} (${applicantObj.trackingNumber})`);
+    } else {
+      globalStore.applicants = [applicantObj, ...globalStore.applicants];
+      console.log(`[Submission]: Saved NEW applicant in JSON store: ${applicantObj.fullName} (${applicantObj.trackingNumber})`);
+    }
+
+    // Immediately save to persistent disk files
+    saveStore(globalStore);
+
+    // Create Notification Record
+    const emailSubject = `بین الاقوامی تنظیم السادات - داخلہ درخواست کی تصدیق [${trackingNumber}]`;
+    const emailBodyUrdu = `محترم/محترمہ ${applicantObj.fullName}، آپ کا آن لائن داخلہ فارم کامیابی کے ساتھ موصول ہو گیا ہے اور پورٹل میں محفوظ کر لیا گیا ہے۔ منتخب کردہ کورس: ${applicantObj.selectedCourse}۔ رول نمبر: ${rollNumber}`;
+    const emailBodyEnglish = `Dear ${applicantObj.fullName}, your online admission application has been successfully received and saved. Course: ${applicantObj.selectedCourse}. Roll Number: ${rollNumber}`;
+
+    const newNotification = {
+      id: `EML-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      applicantId,
+      recipientEmail: applicantObj.email,
+      subject: emailSubject,
+      bodyUrdu: emailBodyUrdu,
+      bodyEnglish: emailBodyEnglish,
+      type: 'submission_received',
+      sentAt: new Date().toISOString(),
+      status: 'sent'
+    };
+
+    const notifIdx = globalStore.notifications.findIndex(n => n.recipientEmail === applicantObj.email && n.subject === emailSubject);
+    if (notifIdx < 0) {
+      globalStore.notifications = [newNotification, ...globalStore.notifications];
+      saveStore(globalStore);
+    }
+
+    // Send confirmation email in background if SMTP is configured
+    const smtpPass = globalStore.smtpConfig?.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+    if (smtpPass && applicantObj.email && applicantObj.email.includes('@')) {
+      (async () => {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: SENDER_EMAIL,
+              pass: smtpPass
+            }
+          });
+
+          await transporter.sendMail({
+            from: `"بین الاقوامی تنظیم السادات" <${SENDER_EMAIL}>`,
+            to: applicantObj.email,
+            subject: emailSubject,
+            html: `
+              <div style="font-family: Arial, sans-serif, 'Urdu Nastaliq'; direction: rtl; text-align: right; background-color: #f4f7f6; padding: 20px; border-radius: 12px;">
+                <div style="background-color: #064e3b; color: #ffffff; padding: 15px; border-radius: 8px;">
+                  <h2 style="margin:0;">بین الاقوامی تنظیم السادات (ISO Pakistan)</h2>
+                  <p style="margin:5px 0 0 0; color: #fde68a;">آن لائن داخلہ درخواست کی تصدیق</p>
+                </div>
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; margin-top: 10px;">
+                  <p><strong>محترم/محترمہ ${applicantObj.fullName}</strong>،</p>
+                  <p>آپ کا آن لائن داخلہ فارم کامیابی کے ساتھ جمع ہو چکا ہے۔</p>
+                  <p><strong>ٹریکنگ نمبر:</strong> ${applicantObj.trackingNumber}</p>
+                  <p><strong>رول نمبر:</strong> ${applicantObj.rollNumber}</p>
+                  <p><strong>کورس:</strong> ${applicantObj.selectedCourse}</p>
+                </div>
+              </div>
+            `
+          });
+          console.log(`[SMTP Email]: Confirmation email dispatched to ${applicantObj.email}`);
+        } catch (e: any) {
+          console.warn(`[SMTP Email]: Background dispatch warning:`, e.message);
+        }
+      })();
+    }
+
+    return res.json({
+      success: true,
+      message: 'طالب علم کا داخلہ فارم اور رول نمبر کارڈ کامیابی کے ساتھ بیک اینڈ فائلز میں محفوظ ہو گیا ہے!',
+      applicant: applicantObj,
+      applicants: globalStore.applicants
+    });
+  } catch (err: any) {
+    console.error('Error in /api/admission/submit:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET System & Database Stats
+app.get('/api/stats', (req, res) => {
+  res.json({
+    success: true,
+    totalApplicants: globalStore.applicants.length,
+    totalNotifications: globalStore.notifications.length,
+    dbFilePath: DATA_FILE_PATH,
+    lastSaved: new Date().toISOString()
+  });
 });
 
 // GET All Applicants

@@ -66,7 +66,7 @@ export default function App() {
     return INITIAL_EMAIL_NOTIFICATIONS;
   });
 
-  // Real-Time Cross-Device Backend Sync (Polled every 3.5s so all IP addresses & devices sync)
+  // Real-Time Cross-Device Backend Sync (Polled every 3s so all IP addresses & devices sync)
   useEffect(() => {
     const fetchSyncData = async () => {
       try {
@@ -75,12 +75,12 @@ export default function App() {
           fetch('/api/notifications').then(r => r.ok ? r.json() : null)
         ]);
 
-        if (appRes?.success && Array.isArray(appRes.applicants) && appRes.applicants.length > 0) {
+        if (appRes?.success && Array.isArray(appRes.applicants)) {
           setApplicants(appRes.applicants);
           safeSaveApplicantsToStorage(appRes.applicants);
         }
 
-        if (notifRes?.success && Array.isArray(notifRes.notifications) && notifRes.notifications.length > 0) {
+        if (notifRes?.success && Array.isArray(notifRes.notifications)) {
           setNotifications(notifRes.notifications);
           try {
             localStorage.setItem('sadaat_notifications_2026', JSON.stringify(notifRes.notifications));
@@ -94,7 +94,7 @@ export default function App() {
     };
 
     fetchSyncData();
-    const interval = setInterval(fetchSyncData, 3500);
+    const interval = setInterval(fetchSyncData, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -136,16 +136,27 @@ export default function App() {
     }
   };
 
-  // Add new applicant handler
+  // Add new applicant handler - with deduplication and backend sync
   const handleAddApplicant = (newApplicant: Applicant) => {
     setApplicants(prev => {
-      const updated = [newApplicant, ...prev];
+      const existingIdx = prev.findIndex(a => 
+        (a.id && a.id === newApplicant.id) ||
+        (a.trackingNumber && a.trackingNumber === newApplicant.trackingNumber) ||
+        (a.cnic && a.cnic.replace(/\D/g, '') === (newApplicant.cnic || '').replace(/\D/g, '') && a.cnic.replace(/\D/g, '').length > 5)
+      );
+      let updated: Applicant[];
+      if (existingIdx >= 0) {
+        updated = [...prev];
+        updated[existingIdx] = { ...updated[existingIdx], ...newApplicant };
+      } else {
+        updated = [newApplicant, ...prev];
+      }
       safeSaveApplicantsToStorage(updated);
       return updated;
     });
 
     // Sync to backend store
-    fetch('/api/applicants', {
+    fetch('/api/admission/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newApplicant)

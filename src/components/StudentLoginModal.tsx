@@ -82,7 +82,7 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
     }
   };
 
-  const handleStudentSearch = (e: React.FormEvent) => {
+  const handleStudentSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setCourseSavedSuccess(false);
@@ -90,28 +90,46 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
 
     const raw = searchQuery.trim().toLowerCase();
     const digitsOnly = raw.replace(/\D/g, '');
-    const list = applicants || [];
+    let list = applicants || [];
 
-    const found = list.find(app => {
-      const cleanCnic = (app.cnic || '').toLowerCase().replace(/\D/g, '');
-      const cleanTrack = (app.trackingNumber || '').toLowerCase();
-      const cleanRoll = (app.rollNumber || '').toLowerCase();
-      const cleanPhone = (app.phone || '').toLowerCase().replace(/\D/g, '');
-      const cleanEmail = (app.email || '').toLowerCase().trim();
-      const cleanName = (app.fullName || '').toLowerCase().trim();
+    const searchInList = (arr: Applicant[]) => {
+      return arr.find(app => {
+        const cleanCnic = (app.cnic || '').toLowerCase().replace(/\D/g, '');
+        const cleanTrack = (app.trackingNumber || '').toLowerCase();
+        const cleanRoll = (app.rollNumber || '').toLowerCase();
+        const cleanPhone = (app.phone || '').toLowerCase().replace(/\D/g, '');
+        const cleanEmail = (app.email || '').toLowerCase().trim();
+        const cleanName = (app.fullName || '').toLowerCase().trim();
 
-      if (digitsOnly.length >= 3) {
-        if (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly)) return true;
-        if (cleanTrack.replace(/\D/g, '').includes(digitsOnly)) return true;
-        if (cleanRoll.replace(/\D/g, '').includes(digitsOnly)) return true;
+        if (digitsOnly.length >= 3) {
+          if (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly)) return true;
+          if (cleanTrack.replace(/\D/g, '').includes(digitsOnly)) return true;
+          if (cleanRoll.replace(/\D/g, '').includes(digitsOnly)) return true;
+        }
+
+        if (cleanTrack.includes(raw) || cleanRoll.includes(raw)) return true;
+        if (cleanEmail.includes(raw) || cleanName.includes(raw)) return true;
+        if ((app.cnic || '').toLowerCase().includes(raw)) return true;
+
+        return false;
+      });
+    };
+
+    let found = searchInList(list);
+
+    // If not found locally, fetch latest backend database store
+    if (!found) {
+      try {
+        const res = await fetch('/api/applicants');
+        const data = await res.json();
+        if (res.ok && data?.success && Array.isArray(data.applicants)) {
+          list = data.applicants;
+          found = searchInList(list);
+        }
+      } catch (err) {
+        console.warn('Backend fetch search error:', err);
       }
-
-      if (cleanTrack.includes(raw) || cleanRoll.includes(raw)) return true;
-      if (cleanEmail.includes(raw) || cleanName.includes(raw)) return true;
-      if ((app.cnic || '').toLowerCase().includes(raw)) return true;
-
-      return false;
-    });
+    }
 
     if (found) {
       setLoggedInStudent(found);

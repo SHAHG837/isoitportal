@@ -24,36 +24,53 @@ export const TrackModal: React.FC<TrackModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     const raw = query.trim().toLowerCase();
     const digitsOnly = raw.replace(/\D/g, '');
-    const list = applicants || [];
+    let list = applicants || [];
 
-    const result = list.find(a => {
-      const cleanCnic = (a.cnic || '').toLowerCase().replace(/\D/g, '');
-      const cleanTrack = (a.trackingNumber || '').toLowerCase();
-      const cleanRoll = (a.rollNumber || '').toLowerCase();
-      const cleanPhone = (a.phone || '').toLowerCase().replace(/\D/g, '');
-      const cleanEmail = (a.email || '').toLowerCase().trim();
-      const cleanName = (a.fullName || '').toLowerCase().trim();
+    const searchInList = (arr: Applicant[]) => {
+      return arr.find(a => {
+        const cleanCnic = (a.cnic || '').toLowerCase().replace(/\D/g, '');
+        const cleanTrack = (a.trackingNumber || '').toLowerCase();
+        const cleanRoll = (a.rollNumber || '').toLowerCase();
+        const cleanPhone = (a.phone || '').toLowerCase().replace(/\D/g, '');
+        const cleanEmail = (a.email || '').toLowerCase().trim();
+        const cleanName = (a.fullName || '').toLowerCase().trim();
 
-      // Check digits only match (for CNIC or Phone or digits of tracking/roll)
-      if (digitsOnly.length >= 3) {
-        if (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly)) return true;
-        if (cleanTrack.replace(/\D/g, '').includes(digitsOnly)) return true;
-        if (cleanRoll.replace(/\D/g, '').includes(digitsOnly)) return true;
+        // Check digits only match (for CNIC or Phone or digits of tracking/roll)
+        if (digitsOnly.length >= 3) {
+          if (cleanCnic.includes(digitsOnly) || cleanPhone.includes(digitsOnly)) return true;
+          if (cleanTrack.replace(/\D/g, '').includes(digitsOnly)) return true;
+          if (cleanRoll.replace(/\D/g, '').includes(digitsOnly)) return true;
+        }
+
+        // Check string matches
+        if (cleanTrack.includes(raw) || cleanRoll.includes(raw)) return true;
+        if (cleanEmail.includes(raw) || cleanName.includes(raw)) return true;
+        if ((a.cnic || '').toLowerCase().includes(raw)) return true;
+
+        return false;
+      });
+    };
+
+    let result = searchInList(list);
+
+    if (!result) {
+      try {
+        const res = await fetch('/api/applicants');
+        const data = await res.json();
+        if (res.ok && data?.success && Array.isArray(data.applicants)) {
+          list = data.applicants;
+          result = searchInList(list);
+        }
+      } catch (err) {
+        console.warn('Track backend search error:', err);
       }
-
-      // Check string matches
-      if (cleanTrack.includes(raw) || cleanRoll.includes(raw)) return true;
-      if (cleanEmail.includes(raw) || cleanName.includes(raw)) return true;
-      if ((a.cnic || '').toLowerCase().includes(raw)) return true;
-
-      return false;
-    });
+    }
 
     setFoundApplicant(result || null);
     setSearched(true);
