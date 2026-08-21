@@ -160,18 +160,23 @@ export const TrackModal: React.FC<TrackModalProps> = ({
                 )}
 
                 {/* Open Admission Card if Approved & Completed */}
-                {foundApplicant.status === 'approved' && foundApplicant.isFullyCompleted && (
+                {foundApplicant.status === 'approved' && foundApplicant.isFullyCompleted ? (
                   <button
                     onClick={() => {
                       onClose();
                       onOpenCardModal(foundApplicant);
                     }}
-                    className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                    className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                   >
                     <Award className="w-4 h-4 text-amber-300" />
                     <span>ایڈمیشن کارڈ کی تصدیق و پرنٹ (Print Card)</span>
                   </button>
-                )}
+                ) : foundApplicant.status === 'pending' ? (
+                  <div className="bg-amber-100/80 border border-amber-300 p-3 rounded-xl text-amber-950 text-xs font-urdu space-y-1 text-center">
+                    <div className="font-bold text-amber-900">ایڈمن پینل سے منظوری کے بعد ایڈمیشن کارڈ ڈاؤن لوڈ کیا جا سکے گا</div>
+                    <div className="text-[11px] text-amber-800 font-medium">کلاسز کا باقاعدہ آغاز: 1 ستمبر 2026</div>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2 font-urdu">

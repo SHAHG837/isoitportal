@@ -34,7 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ lang }) => {
               </div>
             </div>
             <p className="text-xs text-slate-400 font-urdu leading-relaxed">
-              خدمتِ خلق اور جدید تعلیم کا پلیٹ فارم۔ مختلف آن لائن کورسز کا آغاز 20 اگست 2026 سے ہو رہا ہے۔
+              خدمتِ خلق اور جدید تعلیم کا پلیٹ فارم۔ مختلف آن لائن کورسز کا آغاز 1 ستمبر 2026 سے ہو رہا ہے۔
             </p>
           </div>
 

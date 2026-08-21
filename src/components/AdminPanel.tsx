@@ -412,7 +412,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full md:w-auto">
               <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-center">
-                <span className="text-[10px] text-slate-300 font-urdu block">کُل درخواستیں</span>
+                <span className="text-[10px] text-slate-300 font-urdu block">کُل موصول شدہ درخواستیں (ملک و بیرونِ ملک)</span>
                 <span className="text-lg font-bold font-mono text-white">{applicants.length}</span>
               </div>
 
@@ -656,8 +656,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <tbody className="divide-y divide-slate-100 font-sans">
                   {filteredApplicants.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-slate-500 font-urdu">
-                        کوئی درخواست موصول نہیں ہوئی۔
+                      <td colSpan={9} className="p-12 text-center text-slate-500 font-urdu">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <FileText className="w-8 h-8 text-slate-300 stroke-1" />
+                          <p className="text-sm font-bold text-slate-700">فی الحال کوئی داخلہ درخواست موجود نہیں ہے۔</p>
+                          <p className="text-xs text-slate-400">امیدواروں کی جانب سے موصول ہونے والے تمام آن لائن داخلے یہاں ریئل ٹائم میں ظاہر ہوں گے۔</p>
+                        </div>
                       </td>
                     </tr>
                   ) : (

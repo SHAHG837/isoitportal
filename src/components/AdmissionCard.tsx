@@ -11,7 +11,7 @@ interface AdmissionCardProps {
 export const AdmissionCard: React.FC<AdmissionCardProps> = ({ applicant, isUrdu = true }) => {
   const rollNo = applicant.rollNumber || `SADAAT-2026-RN-${applicant.trackingNumber.slice(-4)}`;
   const examCenter = applicant.examCenter || `مرکزی دفتر بین الاقوامی تنظیم السادات، ڈویژن ${applicant.division}`;
-  const examDate = applicant.examDate || '20 اگست 2026 (صبح 10:00 بجے)';
+  const examDate = applicant.examDate || '1 ستمبر 2026 (صبح 10:00 بجے)';
   const courseName = applicant.selectedCourse || 'مختلف کورسز - آن لائن رجسٹریشن 2026';
 
   return (
@@ -81,7 +81,7 @@ export const AdmissionCard: React.FC<AdmissionCardProps> = ({ applicant, isUrdu 
           </div>
           <div className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-700 text-white px-2.5 py-1 rounded-md">
             <Shield className="w-3.5 h-3.5 text-amber-300" />
-            <span>20 اگست 2026</span>
+            <span>1 ستمبر 2026</span>
           </div>
         </div>
 
@@ -179,7 +179,7 @@ export const AdmissionCard: React.FC<AdmissionCardProps> = ({ applicant, isUrdu 
               <span className="text-xs text-slate-500 font-urdu block">تاریخ و وقت (Date & Time)</span>
               <span className="font-bold text-slate-900 text-sm">{examDate}</span>
               <span className="text-[11px] text-emerald-700 block font-medium mt-0.5">
-                کورس آغاز: 20 اگست 2026
+                کورس آغاز: 1 ستمبر 2026
               </span>
             </div>
           </div>
@@ -207,7 +207,7 @@ export const AdmissionCard: React.FC<AdmissionCardProps> = ({ applicant, isUrdu 
             </div>
             <ul className="list-disc list-inside space-y-1 text-slate-600 font-urdu">
               <li>امتحان/کورس سیشن کے وقت یہ ایڈمیشن کارڈ اور اصلی شناختی کارڈ اپنے پاس رکھیں۔</li>
-              <li>تمام آن لائن لیکچرز 20 اگست 2026 سے اسٹوڈنٹ ڈیش بورڈ پر دستیاب ہوں گے۔</li>
+              <li>تمام آن لائن لیکچرز اور کلاسز 1 ستمبر 2026 سے اسٹوڈنٹ ڈیش بورڈ پر دستیاب ہوں گے۔</li>
               <li>رول نمبر اور ٹریکنگ آئی ڈی کسی دوسرے شخص کے ساتھ شیئر نہ کریں۔</li>
             </ul>
           </div>

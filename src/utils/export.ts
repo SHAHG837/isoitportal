@@ -213,7 +213,7 @@ export const exportToPDFReport = (applicants: Applicant[]) => {
 export const printAdmissionCardPDF = (applicant: Applicant, format: 'a4' | 'nic' = 'a4') => {
   const rollNo = applicant.rollNumber || `SADAAT-2026-RN-${applicant.trackingNumber.slice(-4)}`;
   const examCenter = applicant.examCenter || `مرکزی دفتر بین الاقوامی تنظیم السادات، ڈویژن ${applicant.division}`;
-  const examDate = applicant.examDate || '20 اگست 2026 (صبح 10:00 بجے)';
+  const examDate = applicant.examDate || '1 ستمبر 2026 (صبح 10:00 بجے)';
   const courseName = applicant.selectedCourse || 'مختلف کورسز - آن لائن رجسٹریشن 2026';
 
   const printWindow = window.open('', '_blank');
@@ -475,7 +475,7 @@ export const printAdmissionCardPDF = (applicant: Applicant, format: 'a4' | 'nic'
                   </div>
                   <div style="text-align: left;">
                     <span class="nic-label">تاریخِ امتحان:</span>
-                    <span class="nic-val" style="color:#059669;">20 اگست 2026</span>
+                    <span class="nic-val" style="color:#059669;">1 ستمبر 2026</span>
                   </div>
                 </div>
 
@@ -788,7 +788,7 @@ export const printAdmissionCardPDF = (applicant: Applicant, format: 'a4' | 'nic'
           <div class="body-content">
             <div class="status-bar">
               <span>✓ تصدیق شدہ امتحانی رجسٹریشن — داخلہ کارڈ درست ہے</span>
-              <span>تاریخ: 20 اگست 2026</span>
+              <span>تاریخ: 1 ستمبر 2026</span>
             </div>
 
             <div class="grid-layout">
@@ -853,7 +853,7 @@ export const printAdmissionCardPDF = (applicant: Applicant, format: 'a4' | 'nic'
             <div class="instructions">
               <strong>امیدواران کیلئے ضروری ہدایات:</strong><br/>
               • امتحان/کورس سیشن کے وقت یہ ایڈمیشن کارڈ اور اصلی شناختی کارڈ اپنے پاس رکھیں۔<br/>
-              • تمام آن لائن لیکچرز 20 اگست 2026 سے اسٹوڈنٹ ڈیش بورڈ پر دستیاب ہوں گے۔
+              • تمام آن لائن لیکچرز اور کلاسز 1 ستمبر 2026 سے اسٹوڈنٹ ڈیش بورڈ پر دستیاب ہوں گے۔
             </div>
 
             <div class="footer-sec">

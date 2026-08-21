@@ -119,7 +119,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 bg-amber-400 text-emerald-950 font-black text-xs px-3 py-0.5 rounded-full uppercase tracking-wider">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>کورس سیشن آغاز: 20 اگست 2026 (Starts August 20, 2026)</span>
+                <span>کورس سیشن آغاز: 1 ستمبر 2026 (Starts September 1, 2026)</span>
               </div>
 
               <h1 className="text-xl sm:text-2xl font-black font-urdu text-white">
@@ -240,7 +240,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </p>
           </div>
           <span className="text-xs font-bold bg-amber-100 text-amber-900 px-3.5 py-1.5 rounded-full font-mono shrink-0">
-            20 AUG 2026 SESSION
+            01 SEP 2026 SESSION
           </span>
         </div>
 

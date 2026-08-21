@@ -16,6 +16,7 @@ interface HeroBannerProps {
   onDashboard: () => void;
   onTrack: () => void;
   lang: 'ur' | 'en';
+  applicantsCount?: number;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -23,6 +24,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onDashboard,
   onTrack,
   lang,
+  applicantsCount = 0
 }) => {
   const isUrdu = lang === 'ur';
 
@@ -86,15 +88,17 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </button>
           </div>
 
-          {/* Quick Stat Highlights */}
+          {/* Quick Stat Highlights with Real-time Worldwide Application Counter */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-emerald-800/80 text-xs sm:text-sm font-urdu">
             <div className="p-3 bg-emerald-900/60 rounded-xl border border-emerald-700/50">
-              <span className="text-amber-300 font-bold font-mono text-xl block">2026</span>
-              <span className="text-emerald-200">کورس سیشن آغاز</span>
+              <span className="text-amber-300 font-bold font-mono text-xl block">
+                {applicantsCount}
+              </span>
+              <span className="text-emerald-200">موصول شدہ داخلے (ملک و بیرونِ ملک)</span>
             </div>
             <div className="p-3 bg-emerald-900/60 rounded-xl border border-emerald-700/50">
-              <span className="text-amber-300 font-bold font-mono text-xl block">100%</span>
-              <span className="text-emerald-200">آن لائن رجسٹریشن</span>
+              <span className="text-amber-300 font-bold font-mono text-xl block">1 ستمبر 2026</span>
+              <span className="text-emerald-200">کورس سیشن آغاز</span>
             </div>
             <div className="p-3 bg-emerald-900/60 rounded-xl border border-emerald-700/50">
               <span className="text-amber-300 font-bold font-mono text-xl block">5</span>
@@ -117,7 +121,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             <Calendar className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-bold font-urdu text-emerald-950">
-            20 اگست 2026 کورس سیشن
+            1 ستمبر 2026 کورس سیشن
           </h3>
           <p className="text-xs text-slate-600 font-urdu leading-relaxed">
             بنیادی کمپیوٹر، ایڈوانس اے آئی، ڈیجیٹل مارکیٹنگ، ورڈ پریس کمپلیٹ، ایس ای او کمپلیٹ کورسز۔

@@ -43,15 +43,32 @@ interface DataStore {
   smtpConfig?: SmtpConfig;
 }
 
+// Helper to filter out legacy mock applications
+function filterOutMockApplicants(list: any[]): any[] {
+  if (!Array.isArray(list)) return [];
+  return list.filter((app: any) => {
+    if (!app || typeof app !== 'object') return false;
+    const mockIds = ['app-001', 'app-002', 'app-003', 'app-004', 'app-005', 'app-006'];
+    if (mockIds.includes(app.id)) return false;
+    if (typeof app.id === 'string' && app.id.startsWith('app-00')) return false;
+    return true;
+  });
+}
+
 // Load or initialize persistent JSON data store with backup fallback
 function loadStore(): DataStore {
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
       const fileData = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(fileData);
-      return {
-        applicants: Array.isArray(parsed.applicants) && parsed.applicants.length > 0 ? parsed.applicants : INITIAL_APPLICANTS,
-        notifications: Array.isArray(parsed.notifications) && parsed.notifications.length > 0 ? parsed.notifications : INITIAL_EMAIL_NOTIFICATIONS,
+      const cleanApplicants = filterOutMockApplicants(parsed.applicants || []);
+      const cleanNotifications = Array.isArray(parsed.notifications) 
+        ? parsed.notifications.filter((n: any) => !['EML-102911', 'EML-102912'].includes(n.id) && !['app-001', 'app-002'].includes(n.applicantId))
+        : [];
+      
+      const loadedStore: DataStore = {
+        applicants: cleanApplicants,
+        notifications: cleanNotifications,
         smtpConfig: parsed.smtpConfig || {
           senderEmail: SENDER_EMAIL,
           gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
@@ -59,6 +76,8 @@ function loadStore(): DataStore {
           smtpPort: parseInt(process.env.SMTP_PORT || '587', 10)
         }
       };
+      saveStore(loadedStore);
+      return loadedStore;
     }
   } catch (err) {
     console.error('Error reading primary data store file, attempting backup recovery:', err);
@@ -69,29 +88,28 @@ function loadStore(): DataStore {
     if (fs.existsSync(BACKUP_FILE_PATH)) {
       const backupData = fs.readFileSync(BACKUP_FILE_PATH, 'utf-8');
       const backupApplicants = JSON.parse(backupData);
-      if (Array.isArray(backupApplicants) && backupApplicants.length > 0) {
-        console.log(`[Recovery]: Restored ${backupApplicants.length} applicants from backup file.`);
-        const restoredStore = {
-          applicants: backupApplicants,
-          notifications: INITIAL_EMAIL_NOTIFICATIONS,
-          smtpConfig: {
-            senderEmail: SENDER_EMAIL,
-            gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
-            smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
-            smtpPort: parseInt(process.env.SMTP_PORT || '587', 10)
-          }
-        };
-        saveStore(restoredStore);
-        return restoredStore;
-      }
+      const cleanBackup = filterOutMockApplicants(backupApplicants);
+      console.log(`[Recovery]: Restored ${cleanBackup.length} applicants from backup file.`);
+      const restoredStore = {
+        applicants: cleanBackup,
+        notifications: [],
+        smtpConfig: {
+          senderEmail: SENDER_EMAIL,
+          gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
+          smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+          smtpPort: parseInt(process.env.SMTP_PORT || '587', 10)
+        }
+      };
+      saveStore(restoredStore);
+      return restoredStore;
     }
   } catch (backupErr) {
     console.error('Error reading backup file:', backupErr);
   }
 
-  const initialStore = {
-    applicants: INITIAL_APPLICANTS,
-    notifications: INITIAL_EMAIL_NOTIFICATIONS,
+  const initialStore: DataStore = {
+    applicants: [],
+    notifications: [],
     smtpConfig: {
       senderEmail: SENDER_EMAIL,
       gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '',
@@ -211,14 +229,14 @@ app.post('/api/admission/submit', async (req, res) => {
       photoFileName: raw.photoFileName,
       documentUrl: raw.documentUrl,
       documentFileName: raw.documentFileName,
-      status: raw.status || 'approved',
-      adminNote: raw.adminNote || 'بین الاقوامی تنظیم السادات آن لائن رجسٹریشن اور ای میل تصدیق مکمل ہو چکی ہے۔',
+      status: raw.status || 'pending',
+      adminNote: raw.adminNote || 'آن لائن داخلہ درخواست موصول ہو گئی ہے، ایڈمن پینل سے جانچ جاری ہے۔',
       isFullyCompleted: true,
       createdAt: raw.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       encryptedDataHash: raw.encryptedDataHash || `E2E-SHA256-${Math.random().toString(16).substring(2, 10).toUpperCase()}`,
       examCenter: raw.examCenter || `مرکزی دفتر بین الاقوامی تنظیم السادات، ڈویژن ${raw.division || 'لاہور'}`,
-      examDate: raw.examDate || '20 اگست 2026 (صبح 10:00 بجے)'
+      examDate: raw.examDate || '1 ستمبر 2026 (صبح 10:00 بجے)'
     };
 
     // Upsert into memory store
@@ -603,7 +621,7 @@ app.post('/api/send-confirmation-email', async (req, res) => {
       documentUrl: applicant?.documentUrl,
       documentFileName: applicant?.documentFileName,
       examCenter: applicant?.examCenter || `مرکزی دفتر بین الاقوامی تنظیم السادات`,
-      examDate: applicant?.examDate || '20 اگست 2026 (صبح 10:00 بجے)',
+      examDate: applicant?.examDate || '1 ستمبر 2026 (صبح 10:00 بجے)',
       createdAt: applicant?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -676,8 +694,8 @@ app.post('/api/send-confirmation-email', async (req, res) => {
           </div>
 
           <p style="font-size: 13px; color: #4b5563; line-height: 1.6;">
-            آپ کی درخواست زیرِ کاوش ہے۔ منظوری کے بعد آپ اپنے پورٹل سے ایڈمیشن کارڈ پرنٹ اور ڈاؤن لوڈ کر سکیں گے۔
-            کورس کلاسز کا باقاعدہ آغاز <strong>20 اگست 2026</strong> سے ہوگا۔
+            آپ کی درخواست زیرِ کاوش ہے۔ ایڈمن پینل سے منظوری کے بعد آپ اپنے پورٹل سے ایڈمیشن کارڈ پرنٹ اور ڈاؤن لوڈ کر سکیں گے۔
+            کورس کلاسز کا باقاعدہ آغاز <strong>1 ستمبر 2026</strong> سے ہوگا۔
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />

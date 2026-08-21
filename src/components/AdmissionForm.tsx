@@ -54,7 +54,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
   const [fullName, setFullName] = useState('');
   const [fatherName, setFatherName] = useState('');
   const [cnic, setCnic] = useState('');
-  const [dob, setDob] = useState('2003-01-01');
+  const [dob, setDob] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -235,14 +235,14 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
       photoFileName: isWithoutPhoto ? undefined : photoFileName,
       documentUrl,
       documentFileName,
-      status: 'approved',
-      adminNote: 'بین الاقوامی تنظیم السادات آن لائن رجسٹریشن اور ای میل تصدیق مکمل ہو چکی ہے۔',
+      status: 'pending',
+      adminNote: 'آن لائن داخلہ درخواست موصول ہو گئی ہے، ایڈمن پینل سے جانچ اور منظوری کا عمل جاری ہے۔',
       isFullyCompleted: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       encryptedDataHash: encryptedHash,
       examCenter: `مرکزی دفتر بین الاقوامی تنظیم السادات، ڈویژن ${selectedDivision}`,
-      examDate: '20 اگست 2026 (صبح 10:00 بجے)',
+      examDate: '1 ستمبر 2026 (صبح 10:00 بجے)',
     };
 
     try {
@@ -331,7 +331,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
           <div className="space-y-2 flex-1">
             <div className="inline-flex items-center gap-2 bg-amber-400 text-emerald-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5" />
-              <span>{isUrdu ? 'کورس آغاز: 20 اگست 2026' : 'Course Starts: 20 August 2026'}</span>
+              <span>{isUrdu ? 'کورس آغاز: 1 ستمبر 2026' : 'Course Starts: 1 September 2026'}</span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black font-urdu leading-tight text-white">
@@ -399,27 +399,41 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
             </div>
           </div>
 
-          {/* Tracking ID Badge */}
-          <div className="bg-slate-50 border-2 border-emerald-200 rounded-2xl p-6 max-w-md mx-auto space-y-2">
+          {/* Tracking ID Badge & Admin Approval Notice */}
+          <div className="bg-slate-50 border-2 border-emerald-200 rounded-2xl p-6 max-w-md mx-auto space-y-3">
             <span className="text-xs text-slate-500 font-bold block uppercase tracking-wider">
               YOUR OFFICIAL TRACKING ID
             </span>
             <div className="text-3xl font-black font-mono text-emerald-900">
               {submittedApplicant.trackingNumber}
             </div>
-            <div className="text-xs text-emerald-700 font-semibold font-urdu">
+            <div className="text-xs text-emerald-800 font-semibold font-urdu">
               رول نمبر: {submittedApplicant.rollNumber}
+            </div>
+
+            {/* Approval Notice */}
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-right text-xs font-urdu text-amber-950 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>ایڈمن پینل سے منظوری کی شرط:</span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                ایڈمیشن کارڈ ایڈمن پینل کی جانب سے درخواست کی جانچ اور باقاعدہ منظوری (Approval) کے بعد ہی ڈاؤن لوڈ کیا جا سکے گا۔
+              </p>
+              <div className="text-[11px] font-bold text-emerald-800 pt-0.5">
+                کلاسز کا باقاعدہ آغاز: 1 ستمبر 2026
+              </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <button
               onClick={() => onOpenCardModal(submittedApplicant)}
               className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-8 py-3 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-sm font-urdu"
             >
               <Award className="w-5 h-5 text-amber-300" />
-              <span>ایڈمیشن کارڈ کی تصدیق و پرنٹ (View & Print Admission Card)</span>
+              <span>ایڈمیشن کارڈ و درخواست کی صورتحال دیکھیں</span>
             </button>
 
             <button
@@ -463,7 +477,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder={isUrdu ? 'مثال: محمد علی رضوی' : 'e.g. Muhammad Ali Rizvi'}
+                  placeholder=""
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                     errors.fullName ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}
@@ -480,7 +494,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="text"
                   value={fatherName}
                   onChange={(e) => setFatherName(e.target.value)}
-                  placeholder={isUrdu ? 'مثال: حسن عباس رضوی' : 'e.g. Hassan Abbas Rizvi'}
+                  placeholder=""
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                     errors.fatherName ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}
@@ -497,7 +511,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="text"
                   value={cnic}
                   onChange={handleCnicChange}
-                  placeholder="xxxxx-xxxxxxx-x"
+                  placeholder=""
                   maxLength={15}
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono transition-all ${
                     errors.cnic ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
@@ -555,7 +569,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="0300-1234567"
+                  placeholder=""
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono transition-all ${
                     errors.phone ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}
@@ -572,7 +586,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="applicant@example.com"
+                  placeholder=""
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                     errors.email ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}
@@ -599,7 +613,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   ))}
                 </select>
                 <p className="text-[11px] text-amber-800 font-urdu">
-                  بین الاقوامی تنظیم السادات کے تحت تمام کورسز 20 اگست 2026 سے آن لائن فراہم کیے جائیں گے۔
+                  بین الاقوامی تنظیم السادات کے تحت تمام کورسز 1 ستمبر 2026 سے آن لائن فراہم کیے جائیں گے۔
                 </p>
               </div>
 
@@ -674,7 +688,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="text"
                   value={education}
                   onChange={(e) => setEducation(e.target.value)}
-                  placeholder={isUrdu ? 'مثال: Matric, F.Sc, BS Computer Science' : 'e.g. BS Computer Science'}
+                  placeholder=""
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                     errors.education ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}
@@ -691,7 +705,7 @@ export const AdmissionForm: React.FC<AdmissionFormProps> = ({
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder={isUrdu ? 'مکان نمبر، اسٹریٹ، شہر کا نام' : 'House No, Street, City'}
+                  placeholder=""
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
                     errors.address ? 'border-red-500 bg-red-50/30' : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}

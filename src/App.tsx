@@ -45,25 +45,46 @@ export default function App() {
     }
   };
 
+  // Helper to remove any legacy default mock entries
+  const sanitizeApplicants = (list: any[]): Applicant[] => {
+    if (!Array.isArray(list)) return [];
+    return list.filter((a: any) => {
+      if (!a || typeof a !== 'object') return false;
+      const mockIds = ['app-001', 'app-002', 'app-003', 'app-004', 'app-005', 'app-006'];
+      if (mockIds.includes(a.id) || (typeof a.id === 'string' && a.id.startsWith('app-00'))) return false;
+      return true;
+    });
+  };
+
   // Application & Email Notification States with Server & LocalStorage Persistence
   const [applicants, setApplicants] = useState<Applicant[]>(() => {
     try {
       const saved = localStorage.getItem('sadaat_applicants_2026');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return sanitizeApplicants(parsed);
+        }
+      }
     } catch (e) {
       console.error(e);
     }
-    return INITIAL_APPLICANTS;
+    return [];
   });
 
   const [notifications, setNotifications] = useState<EmailNotification[]>(() => {
     try {
       const saved = localStorage.getItem('sadaat_notifications_2026');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((n: any) => !['EML-102911', 'EML-102912'].includes(n.id) && !['app-001', 'app-002'].includes(n.applicantId));
+        }
+      }
     } catch (e) {
       console.error(e);
     }
-    return INITIAL_EMAIL_NOTIFICATIONS;
+    return [];
   });
 
   // Real-Time Cross-Device Backend Sync (Polled every 3s so all IP addresses & devices sync)
@@ -250,6 +271,7 @@ export default function App() {
             onDashboard={() => setCurrentTab('dashboard')}
             onTrack={() => setIsTrackModalOpen(true)}
             lang={lang}
+            applicantsCount={applicants.length}
           />
         )}
 

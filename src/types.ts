@@ -61,7 +61,7 @@ export interface StudentProgress {
   rollNumber: string;
   cnic: string;
   courseTitle: string;
-  startDate: string; // 20 August 2026
+  startDate: string; // 1 September 2026
   completionPercentage: number;
   modules: CourseModule[];
   certificateIssued: boolean;

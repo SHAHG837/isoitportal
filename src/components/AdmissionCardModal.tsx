@@ -106,7 +106,7 @@ export const AdmissionCardModal: React.FC<AdmissionCardModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 space-y-6">
-          {/* Check: Is Form Fully Completed? */}
+          {/* Check 1: Is Form Fully Completed? */}
           {!isFormComplete ? (
             <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 text-center space-y-4">
               <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto">
@@ -126,6 +126,65 @@ export const AdmissionCardModal: React.FC<AdmissionCardModalProps> = ({
               >
                 فارم کی ترامیم کیلئے واپس جائیں
               </button>
+            </div>
+          ) : applicant.status !== 'approved' ? (
+            /* Check 2: Is Application Approved by Admin? */
+            <div className="bg-amber-50/90 border-2 border-amber-400 rounded-3xl p-6 sm:p-8 text-center space-y-6">
+              <div className="w-20 h-20 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto shadow-inner border-2 border-amber-300">
+                <AlertTriangle className="w-10 h-10" />
+              </div>
+
+              <div className="space-y-3 max-w-xl mx-auto">
+                <div className="inline-flex items-center gap-2 bg-amber-200 text-amber-950 font-black text-xs px-3.5 py-1 rounded-full font-urdu">
+                  <span>صورتحال: {applicant.status === 'rejected' ? 'درخواست نامنظور (Rejected)' : 'درخواست زیرِ جائزہ (Pending Admin Approval)'}</span>
+                </div>
+
+                <h3 className="text-2xl font-black font-urdu text-amber-950">
+                  {applicant.status === 'rejected' 
+                    ? 'داخلہ درخواست نامنظور کر دی گئی ہے'
+                    : 'ایڈمیشن کارڈ ایڈمن پینل سے منظوری کے بعد ڈاؤن لوڈ کیا جا سکے گا'}
+                </h3>
+
+                <p className="text-sm text-slate-700 font-urdu leading-relaxed">
+                  {applicant.status === 'rejected'
+                    ? `محترم/محترمہ ${applicant.fullName}، آپ کی داخلہ درخواست منظور نہیں ہو سکی۔ نوٹ: ${applicant.adminNote || 'براہ کرم دوبارہ درست کوائف کے ساتھ فارم پر کریں۔'}`
+                    : `محترم/محترمہ ${applicant.fullName}، آپ کی داخلہ درخواست کامیابی کے ساتھ موصول ہو چکی ہے اور ایڈمن پینل کی جانچ کے مرحلے میں ہے۔ ایڈمن پینل کی جانب سے باضابطہ منظوری (Approval) کے بعد آپ کا تصدیق شدہ ایڈمیشن کارڈ اور رول نمبر کارڈ یہاں ڈاؤن لوڈنگ اور پرنٹنگ کے لیے فعال کر دیا جائے گا۔`}
+                </p>
+              </div>
+
+              {/* Application Details Summary Box */}
+              <div className="bg-white border border-amber-300 rounded-2xl p-4 sm:p-5 max-w-md mx-auto text-right space-y-2 text-xs font-urdu shadow-xs">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                  <span className="text-slate-500">امیدوار کا نام:</span>
+                  <span className="font-bold text-slate-900">{applicant.fullName}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                  <span className="text-slate-500">ٹریکنگ ID:</span>
+                  <span className="font-mono font-bold text-emerald-900">{applicant.trackingNumber}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                  <span className="text-slate-500">منتخب کردہ کورس:</span>
+                  <span className="font-bold text-amber-950">{applicant.selectedCourse || 'مختلف کورسز'}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                  <span className="text-slate-500">ڈویژن:</span>
+                  <span className="font-bold text-slate-800">{applicant.division}</span>
+                </div>
+                <div className="flex justify-between items-center text-emerald-800 pt-1 font-bold">
+                  <span>کلاسز کا باقاعدہ آغاز:</span>
+                  <span>1 ستمبر 2026 (September 1, 2026)</span>
+                </div>
+              </div>
+
+              {/* Footer action */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={onClose}
+                  className="bg-slate-800 hover:bg-slate-900 text-white font-bold px-8 py-2.5 rounded-xl transition-all text-xs font-urdu shadow-md"
+                >
+                  سمجھ گیا، بند کریں (Close)
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -259,7 +318,7 @@ export const AdmissionCardModal: React.FC<AdmissionCardModalProps> = ({
                       <div>
                         <span className="font-urdu block font-bold">5. امتحانی تاریخ و ڈویژن کی تصدیق</span>
                         <span className="text-[11px] text-slate-500">
-                          تاریخ: 20 اگست 2026 | ڈویژن: {applicant.division}
+                          کلاسز آغاز: 1 ستمبر 2026 | ڈویژن: {applicant.division}
                         </span>
                       </div>
                     </div>
